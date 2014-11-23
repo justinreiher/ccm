@@ -1,0 +1,6 @@
+constant
+  vdd/gnd
+pwl
+  sqare waveform
+sin
+annulus

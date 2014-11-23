@@ -1,0 +1,18 @@
+2014-11-22: version 1.0
+  Create the Coho Circuit Model tool from OpenCoho.
+  1. Re-organize the architecture
+    a. Make it independent with reachability analysis codes
+    b. Make clean interface for device Models, circuit libraries. Which could be easily changed and modified. 
+  2. New features
+    a. Implement the vectorization feature for improving performance
+    b. Support non-MOS circuits, e.g. RC, doesn't support L
+    c. Support current source and voltage sources via testbench, add vsin for voltage source 
+    d. Generalized the code for support general device models and circuit libraries. 
+    e. Add new circuits to the coho library
+    f. Provide smaller mat files for public.
+    g. More test codes
+  3. Clean up codes
+    a. remove many unused codes, device models and circuits 
+    b. easier interface for configurate the software
+    c. code format
+     

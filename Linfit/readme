@@ -1,0 +1,40 @@
+This package computes liear differential inclusion (LDI) for models by ccm_getModel. 
+Given a region (usually a bounding box with an optimal LP (can be non-optimal)), 
+the 'lft_device' function computes 
+    y \IN c'[x;1]+/err.
+It supports both 'simu' and 'quad' models: 
+    lft_simu:   based on 'simu' models, supported methods: 
+      'lls':  linear least square method. Efficient with larger error. (default)
+      'mm':   find the max/min value, c(1:3) is zero, c(4) is mean of max/min ids.
+      'ls*':  local search method using convexity. Smaller error. Best linear fitting achieved. Very expensive
+      'lp*':  linear programming method, slow. Best linear fitting achieved. Too expensive to work.
+			*:      not recommended for production usage.
+    lft_quad:   based on 'quad' models, support 'lip','pt' methods
+      'lip':  lipschitz approximation method (default)
+      'pt':   brute-force method
+
+
+NOTE: It requires the models must have the following informations: 
+     data: model data for each grid 
+     err:  error term for each grid, could be [] or scalar
+     GRID: grid information
+       v0: initial value for grid 0
+       nv: number of grids
+       dv: unit length of grids
+     SIZE: circuit size
+       len,wid: length and width
+     META: meta-info
+       type: 'simu' or 'quad' 
+     YC: accumulated sum of data for lft_simu 
+NOTE: This package assumes the current function is linear with the size of the circuit (length/width) 
+
+
+TODO 
+1. A idea of speedup computation.
+We tried to use cache to store the result and reuse it later. 
+However, the result is not quite good because the bbox is not reused quite often. 
+On the other hand, hybridization method split the whole region into fixed cells and precompute result. 
+We can combine them as:  
+  a. given a region, find the minimum bbox that contains the region and maximum bbox that the region contains over all recorded history. 
+  b. compute the difference of the upper and lower bounds, use the upper bound if the difference is smaller than a tolerence. 
+  c. compute the result and record the result otherwise.

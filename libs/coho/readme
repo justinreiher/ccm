@@ -1,0 +1,6 @@
+This provide the default libraries for Coho
+  leaves: basic circuit elements (leaves) that requires mat models, e.g. nmos
+  sources: input sources, e.g. Brockett's annulus
+  components: composed circuits, e.g. NAND
+  circuits: commonly used circuits
+  utils_cra: utils files from cra (mainly for Brockett's annulus)

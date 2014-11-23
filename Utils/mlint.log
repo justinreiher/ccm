@@ -1,0 +1,95 @@
+
+                                                          < M A T L A B (R) >
+                                                Copyright 1984-2014 The MathWorks, Inc.
+                                                  R2014a (8.3.0.532) 64-bit (glnxa64)
+                                                           February 11, 2014
+
+ 
+To get started, type one of these: helpwin, helpdesk, or demo.
+For product information, visit www.mathworks.com.
+ 
+./evalQuadJac.m
+./evalQuadPoly.m
+./quadConvert.m
+./utils_struct.m
+./grid_loc2v.m
+./model/lft_lsm.m
+./model/comp_inv.m
+L 18 (C 3-6): The value assigned to variable 'GRID' might be unused.
+L 19 (C 3-6): The value assigned to variable 'SIZE' might be unused.
+L 27 (C 3-6): The value assigned to variable 'data' might be unused.
+L 28 (C 3-5): The value assigned to variable 'err' might be unused.
+
+./model/comp_quadModel.m
+L 58 (C 1-4): The value assigned to variable 'data' might be unused.
+L 58 (C 27-29): The value assigned to variable 'err' might be unused.
+L 61 (C 16-19): The value assigned to variable 'SIZE' might be unused.
+
+./model/comp_smos.m
+L 15 (C 18-21): The value assigned to variable 'SIZE' might be unused.
+L 28 (C 3-6): The value assigned to variable 'data' might be unused.
+L 30 (C 5-7): The value assigned to variable 'err' might be unused.
+L 32 (C 5-7): The value assigned to variable 'err' might be unused.
+L 34 (C 5-7): The value assigned to variable 'err' might be unused.
+
+./model/spice_device_ptm.m
+L 39 (C 12-17): The value assigned to variable 'result' might be unused.
+L 59 (C 5-9): The value assigned to variable 'tline' might be unused.
+L 59 (C 28-32): The value assigned to variable 'tline' might be unused.
+L 60 (C 5-9): The value assigned to variable 'tline' might be unused.
+L 82 (C 7-15): The variable 'spiceData' appears to change size on every loop iteration. Consider preallocating for speed.
+L 101 (C 42): Comma before newline might incorrectly suggest row continuation.
+L 102 (C 9): Comma before newline might incorrectly suggest row continuation.
+L 103 (C 33): Comma before newline might incorrectly suggest row continuation.
+L 104 (C 19): Comma before newline might incorrectly suggest row continuation.
+L 105 (C 21): Comma before newline might incorrectly suggest row continuation.
+L 106 (C 9): Comma before newline might incorrectly suggest row continuation.
+L 107 (C 17): Comma before newline might incorrectly suggest row continuation.
+L 108 (C 9): Comma before newline might incorrectly suggest row continuation.
+L 109 (C 17): Comma before newline might incorrectly suggest row continuation.
+L 110 (C 38): Comma before newline might incorrectly suggest row continuation.
+L 111 (C 19): Comma before newline might incorrectly suggest row continuation.
+L 141 (C 7): Comma before newline might incorrectly suggest row continuation.
+L 142 (C 27): Comma before newline might incorrectly suggest row continuation.
+L 143 (C 23): Comma before newline might incorrectly suggest row continuation.
+L 144 (C 22): Comma before newline might incorrectly suggest row continuation.
+L 145 (C 16): Comma before newline might incorrectly suggest row continuation.
+L 146 (C 7): Comma before newline might incorrectly suggest row continuation.
+L 148 (C 97): Comma before newline might incorrectly suggest row continuation.
+L 149 (C 34): Comma before newline might incorrectly suggest row continuation.
+L 150 (C 7): Comma before newline might incorrectly suggest row continuation.
+L 151 (C 11): Comma before newline might incorrectly suggest row continuation.
+L 154 (C 16): { A{:} B } can often be replaced by [ A {B}], which can be much faster.
+L 154 (C 22): { A{:} B } can often be replaced by [ A {B}], which can be much faster.
+L 154 (C 33): { A{:} B } can often be replaced by [ A {B}], which can be much faster.
+L 166 (C 48): Comma before newline might incorrectly suggest row continuation.
+L 168 (C 48): Comma before newline might incorrectly suggest row continuation.
+
+./model/spice_simu_ptm.m
+L 15 (C 3-5): The value assigned to variable 'lib' might be unused.
+L 17 (C 16-18): The value assigned to variable 'len' might be unused.
+L 19 (C 3-4): The value assigned to variable 'v0' might be unused.
+L 20 (C 3-4): The value assigned to variable 'dv' might be unused.
+L 21 (C 3-4): The value assigned to variable 'nv' might be unused.
+L 22 (C 3-5): The value assigned to variable 'gnd' might be unused.
+L 22 (C 10-12): The value assigned to variable 'vdd' might be unused.
+L 22 (C 19-25): The value assigned to variable 'process' might be unused.
+L 26 (C 7-11): The value assigned to variable 'nodes' might be unused.
+L 27 (C 7-10): The value assigned to variable 'info' might be unused.
+L 29 (C 7-11): The value assigned to variable 'nodes' might be unused.
+L 30 (C 7-10): The value assigned to variable 'info' might be unused.
+L 32 (C 7-11): The value assigned to variable 'nodes' might be unused.
+L 33 (C 7-10): The value assigned to variable 'info' might be unused.
+L 36 (C 7-11): The value assigned to variable 'nodes' might be unused.
+L 37 (C 7-10): The value assigned to variable 'info' might be unused.
+L 45 (C 3-6): The value assigned to variable 'data' might be unused.
+L 51 (C 3-5): The value assigned to variable 'wid' might be unused.
+
+./utils_hashtable.m
+./quadBounds.m
+./utils_strs2ids.m
+./utils_combineInd.m
+./utils_palette.m
+./utils_solveLS.m
+./grid_pickup.m
+./grid_v2loc.m
