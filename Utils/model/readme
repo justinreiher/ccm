@@ -1,0 +1,22 @@
+I. How to get model data by spice
+  spice_simu_ptm: the main matlab program to generate the table
+  clean.sh: remove hspice redundant files
+  180nm_bulk.pm: PTM 180 process parameters
+
+  NOTE: It only shows an demo to get hspice data. 
+  It's only for UBC environment, may not work in other place
+
+  # Setup environment for HSPICE
+  # NOTE: It doesn't work now, can't get license 
+  csh
+  source /isd/CMC/bin/hspice.csh
+  bash
+  hspice
+
+II. How to compute other models based on nmos and pmos models
+  1. Compute simulation model for macro circuits based on simulation models of transistors
+	  comp_smos: for transistors whose source is connected to substrate.
+	  comp_inv: for inverter
+  2. Compute quadratic model from simulation models.
+	  comp_quadModel: compute the quadratic model from the simulation model
+		lft_lsm: used by above function

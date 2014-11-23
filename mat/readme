@@ -1,0 +1,33 @@
+###############################################################################
+This package include default mat files used by Coho-Model. 
+It includes two fabrications 
+  1. PTM: predictive technology process, see ptm.asu.edu for details 
+  2. TSMC: due to license problem, we can't open the data 
+The location of the mat file is calculated as 
+  ./<fab>/<process>/<type>/<name>.mat  
+The mat file contains 
+  data: model data for each grid 
+  err:  error term for each grid, could be [] or scalar
+  GRID: grid information
+    v0: initial value for grid 0
+    nv: number of grids
+    dv: unit length of grids
+  SIZE: circuit size
+    len,wid: length and width
+  META: meta-info
+    type: 'simu' or 'quad' 
+    *lib: 'coho'
+    *name: unique name of the device
+    *fab:  fab, e.g. TSMC, INTEL, PTM 
+    *process: e.g. 180nm, 10nm. 
+    *gnd/vdd: voltage for gnd/vdd
+    *nodes: nodes names
+    *desc: description of the circuit
+
+###############################################################################
+To add a new set of mat files, you should 
+1. Provide mat files that contains all data list above, except the one with * to make Coho-Model works.
+2. If the mat files do not follow the same method, please update the function for finding mat files by
+   ccm_cfg('set','matFileFunc');
+3. There are utilites functions under $CCM/Utils/model/*, which could be helpful for generatint mat files
+

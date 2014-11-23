@@ -1,0 +1,3 @@
+# How to add a new library
+1. define subclass of 'circuit' for leaf circuits. 
+2. lib_open, lib_close, lib_info, lib_cfg?

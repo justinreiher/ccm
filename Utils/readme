@@ -1,0 +1,21 @@
+% grid operations
+grid_loc2v.m
+grid_pickup.m
+grid_v2loc.m
+
+% quadratic polynomial
+quadBounds.m
+quadConvert.m
+evalQuadJac.m
+evalQuadPoly.m
+
+% Utils shared with CRA
+utils_combineInd.m
+utils_hashtable.m
+utils_palette.m
+utils_solveLS.m
+utils_strs2ids.m
+utils_struct.m
+
+% functions for computing mat files
+model/*

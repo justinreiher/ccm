@@ -1,0 +1,24 @@
+Coho-Model(CCM): Coho Circuit Modeling Tool
+  CCM is a toolset for simplifying the circuit model works for both simulation and formal verification. 
+  It provide a object-oriented circuit interface for users, which enables reuse and easily extension. 
+  Users only need to specify the circuit layout, the tool will automatically provide ODE interface for simulation, 
+  or linear differential inclusion interface for formal verification, and do the optimization automatically.
+  
+
+FAQ: 
+=====================
+1. How to install Coho-Model
+   install.sh
+=====================
+2. How to use Coho-Model, small example
+   ccm_open
+   <users' code>
+   ccm_close
+=====================
+3. Any more examples ?
+   ./example/
+   ./MSpice/test/
+   ./lib/coho/test/
+=====================
+4. More documents
+   ./doc
