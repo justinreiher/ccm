@@ -12,8 +12,8 @@
 %     has_cplex = ccm_info('has_cplex'); // has the value
 function val = ccm_info(field)
   % NOTE: I use global vars because of the Matlab bug. 
-  %       (When the code is in linked dir, persistent vars are re-inited 
-  %        when firstly changing to a new directory). 
+	%       (When the code is in linked dir, persistent vars are re-inited 
+	%        when firstly changing to a new directory). 
   %       Please don't modify the value by other functions. 
   %persistent  CCM_INFO;
   global CCM_INFO;
@@ -33,11 +33,16 @@ function  info = ccm_info_init
   % CCM directories 
   ccm_dirs = {
     'MSpice',
+    'MSpice/libs',
+    'MSpice/libs/vs',
+    'MSpice/libs/coho',
     'Linfit',
     'Linfit/Simu',
     'Linfit/Quad',
+    'Linfit/Annulus',
+    'Linfit/Utils',
     'Interp',
-    'Utils/model',
+    'Model',
     'Utils'};
 
   % current user
@@ -48,6 +53,6 @@ function  info = ccm_info_init
   license = 'bsd';
   
   info = struct('version',version, 'license',license, ...
-                'ccm_home',ccm_home, 'ccm_dirs',{ccm_dirs}, 'user',user); 
+								'ccm_home',ccm_home, 'ccm_dirs',{ccm_dirs}, 'user',user); 
 end % ccm_info
 

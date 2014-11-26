@@ -10,7 +10,7 @@ function Y = interp_device(device,X,wid,rlen,method)
 %           e.g. for 180nm process, if rlen=2, then the device length is 2*180nm. 
 %           can specify different length by nx1 vectors for each iterm of X. 
 %   method: a string that specify the algorithm, see interp_data for details.
-%           if method is not provided, ccm_cfg('get','interpIdsMethod') is used.
+%           if method is not provided, ccm_cfg('get','interpMethod') is used.
 %   NOTE:   we assume the function is linear with the size of device.  
 % Output:
 %   Y:      function value, nx1 vector.
@@ -18,7 +18,7 @@ function Y = interp_device(device,X,wid,rlen,method)
 if(nargin<2), error('not enough parameters'); end
 if(nargin<3), wid =[]; end
 if(nargin<4), rlen =[]; end
-if(nargin<5), method = ccm_cfg('get','interpIdsMethod'); end
+if(nargin<5), method = ccm_cfg('get','interpMethod'); end
 [~,n] = size(X);
 if(~any(numel(wid)==[0,1,n])), error('incorrect number of wid'); end
 if(~any(numel(rlen)==[0,1,n])), error('incorrect number of rlen'); end

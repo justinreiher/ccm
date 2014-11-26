@@ -13,7 +13,7 @@ function [Y,inds,rems,gData,gY,gW] = interp_data(model,X,method)
 %   method:  interpolation methods
 %     'lookup':   find the nearest grid point and use its value
 %     'linear':   find all neighbors and use bilinear interpolation.
-%     'cosine':   find all neighbors and use 'cosine window' interpolation.
+%     'coswin':   find all neighbors and use 'cosine window' interpolation.
 %
 % Output:       
 %  Y:    The function value of points X. It is reshaped to a nx1 vector 
@@ -22,7 +22,7 @@ function [Y,inds,rems,gData,gY,gW] = interp_data(model,X,method)
 %                   simu   quad
 %          lookup   x      x
 %          linear   C^0   C^0
-%          cosine   C^n   C^n
+%          coswin   C^n   C^n
 %
 % [Y,inds,rems,gData,gY,gW] = interp_data(model,X,method) 
 %   For internal usage in inter_jacob.m
