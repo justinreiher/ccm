@@ -24,7 +24,7 @@
 %     libRoot: root directory for the libraries. 
 %       default: $CCM_HOME/libs/coho
 %       NOTE: this must be set before 'ccm_open'. 
-%     interpIdsMethod: default interpolation methods for current function
+%     interpMethod: default interpolation methods for current function
 %       values: 'coswin','linear','lookup'
 %       default: 'coswin'
 %     interpJacMethod: default interpolation methods for Jacobian matrix 
@@ -68,7 +68,7 @@ function cfg = ccm_cfg_default
   matFileFunc = @(d)([upper(d.fab),'/',lower(d.process),'/',lower(d.type),'/',lower(d.name)]); 
   libRoot = [ccm_home,'/libs/coho'];
   % interp methods
-  interpIdsMethod = 'coswin';      % coswin, lookup, linear 
+  interpMethod = 'coswin';      % coswin, lookup, linear 
   interpJacMethod = 'ana';         % ana(analystical) num(numerical)
   interpJacNumMethod = 'linear';   % linear,coswin (for quad model only), lookup (bad)
   % linfit method
@@ -78,7 +78,7 @@ function cfg = ccm_cfg_default
   % linfit methods
   cfg = struct('fab',fab,'process',process,'type',type, ...
                'matRoot',matRoot,'matFileFunc',matFileFunc, 'libRoot',libRoot, ...
-               'interpIdsMethod', interpIdsMethod, 'interpJacMethod', interpJacMethod, ...
+               'interpMethod', interpMethod, 'interpJacMethod', interpJacMethod, ...
                'lftSimuMethod',lftSimuMethod, 'lftQuadMethod',lftQuadMethod ...
               ); 
 end % ccm_cfg_default;
