@@ -1,7 +1,7 @@
-function  comp_quadModel(M,GRID,dir)
+function Mq = comp_quadModel(M,GRID,path)
 % This funvtion computes quadratic polynomial model based on the simulation model.
 % The center of (i,j,...) cell is  (v0+i*dv,v0+j*dv,...), the length of the cell is 2*dv;
-if(nargin<3||isempty(dir)), dir = '../quad'; end
+if(nargin<3||isempty(path)), path= '.'; end
 
 % check parameters
 if(~strcmpi(M.META.type,'simu'))
@@ -60,7 +60,9 @@ data = reshape(data,nv'); err = reshape(err,nv');
 % save result
 META = M.META; SIZE = M.SIZE;
 META.type = 'quad';  % update type
-save([dir,'/',META.name],'data','err','GRID','SIZE','META');
+file = [path,'/',META.name,'.mat'];  
+save(file,'data','err','GRID','SIZE','META');
+Mq = load(file);
 
 function x = quad_gridX(siz)
 % x = interp_genGrid(siz)

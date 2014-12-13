@@ -3,8 +3,10 @@
 
 cd simu
 disp('Generate models for inverters and nmos/pmos with source connected to ground/vdd');
-comp_smos;
-comp_inv;
+Mn = load('nmos.mat');
+Mp = load('pmos.mat');
+comp_smos(Mn,Mp,'.');
+comp_inv(Mn,Mp,2,'.');
 
 % comp_quadModels;
 disp('Generate quadratic models');
