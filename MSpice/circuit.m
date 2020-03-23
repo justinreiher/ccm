@@ -154,12 +154,13 @@ classdef circuit < matlab.mixin.Copyable %handle
     name='';         % circuit name
     nodeNum=0;       % # of circuit nodes
     ports={};        % visiable nodes
+    cctPath = [];
     %-- status --% 
     finalized=false;  % construction is complete 
     flattened=false;  % circuit tree flattened
     vectorized=false; % elements grouped for vectorization 
-  end
-  properties (GetAccess='protected', SetAccess='private');
+%  end
+%  properties (GetAccess='protected', SetAccess='private');
     %-- circuit tree --%
     elements={};      % subcircuits 
     maps={};          % subcircuit nodes <-> circuit nodes
@@ -273,6 +274,7 @@ classdef circuit < matlab.mixin.Copyable %handle
       this.nodeNum = N; this.maps = maps;
       this.finalized = true; this.conns = {}; % clear temp data
       %if(this.is_leaf), this.flattened = true; end % opt for leaf?
+      this.cctPath = this.createPath;
     end % function
 
   end % method
@@ -310,7 +312,74 @@ classdef circuit < matlab.mixin.Copyable %handle
         end
       end
     end
-
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %function to return circuit element properties, and it's associated map so
+    %that the appropriate voltages can be distributed at simulation time
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    function circuitMapping = getCircuitMap(this)
+        numUniqueIDs = max(this.grp_cids);
+        circuitMapping = cell(1,numUniqueIDs);
+        for cid = 1:numUniqueIDs
+            circuitElements = this.elements(this.grp_cids == cid);
+            elementProperties.deviceType  = class(circuitElements{1});
+            elementProperties.deviceModel = circuitElements{1}.model;
+            elementProperties.parameters  = this.getElementWiseParameters(circuitElements);
+            circuitMap     = this.grp_maps{cid};
+            if(strcmp(elementProperties.deviceType,'vsrc'))
+                circuitMapping{cid} = {elementProperties,circuitMap,circuitElements};
+            else
+                circuitMapping{cid} = {elementProperties,circuitMap};
+            end
+        end
+    end
+    
+    %Function to retrieve devices by the query
+    
+    function devices = getDevices(this,query)
+        if(iscell(query))
+            %handle finding path names/converting cell array of indices
+        elseif(isnumeric(query))
+            devices = this.getDevicesByIndex(query);
+        else
+            error('device query is not understood');
+        end
+    end
+    
+    %Function to retrieve devices connected to the node in question
+    
+    function [deviceMaps,names] = getDevicesConnectedToNode(this,node)
+        numUniqueIDs = max(this.grp_cids);
+        i = 1;
+        for cid = 1:numUniqueIDs
+            circuitElements = this.elements(this.grp_cids == cid);
+            circuitMap = this.grp_maps{cid};
+            [~,numDev] = size(circuitMap);
+            for j = 1:numDev
+                devMap = circuitMap(:,j);
+                if(any(devMap == node))            
+                    elementProperties.deviceType = class(circuitElements{j});
+                    elementProperties.deviceModel = circuitElements{j}.model;
+                    elementProperties.parameters = this.getElementWiseParameters({circuitElements{j}});
+                    deviceMaps(:,i) = circuitMap(:,j);
+                    names{i} = circuitElements{j}.name;
+                    i = i +1;
+                end
+            end
+        end
+    end
+    
+    %Functio to retreive devices by indices (requires knowledge of the
+    %indices of the device
+    
+   function devices = getDevicesByIndex(this,indices)
+        devices = this.elements(indices);
+   end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% below here are functions that are now handelled by the particular model
+% that is being employed. Will keep this here for now but plans are to
+% remove this once all examples work.
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Current function: 
     %   i = I(v,varargin)
@@ -372,9 +441,33 @@ classdef circuit < matlab.mixin.Copyable %handle
       assert(this.finalized);
       error('input sources must implement this function');
     end
+    
+    
   end % method for simulation interface
-
+  
   methods(Access=private,Sealed=true)
+      
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % Private function to return element parameters struct where each field
+      % contains a cell array of the values for all the fields for the devices corresponding to
+      % circuitElements, used for vectorization. i.e.
+      % pmos width: {1 by numElements} cell array.
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      function listParams = getElementWiseParameters(this,circuitElements)
+          [~,numElements] = size(circuitElements);
+          paramFields = fields(circuitElements{1}.params);
+          [numParams,~] = size(paramFields);
+          for i = 1:numParams
+              container = cell(1,numElements);
+              for j = 1:numElements
+                  value = circuitElements{j}.params.(paramFields{i});
+                  container{j} = value;
+              end
+              listParams.(paramFields{i}) = container;
+          end
+      end
+
+      
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Private functions for I/C 
     %
@@ -395,6 +488,11 @@ classdef circuit < matlab.mixin.Copyable %handle
     end
 
     % Merge function calls for the same class, replaced by Static function call
+    % mrg: Let [n_node, n_pts] = size(v).  I_vec can be called with a matrix
+    %   of points.  Each point is a column of this matrix.  Each column has the
+    %   voltages for each node of the circuit.  I_vec can evaluate the current
+    %   function for all n_pts points in the state space as a single, vectorized
+    %   operation.  This is handy -- believe me.
     function i = I_vec(this,v,varargin)
       if(this.is_leaf)                        % same with I() for leaf circuits
         i = this.I(v,varargin{:}); return
@@ -402,15 +500,30 @@ classdef circuit < matlab.mixin.Copyable %handle
       if(~this.vectorized),this.vectorize;end % make sure it's vectorized
       [N,P] = size(v); assert(N==this.nodeNum); % N: nodes, P: points
       i = zeros(size(v)); 
-      for cid=1:max(this.grp_cids)
+      for cid=1:max(this.grp_cids)  % mrg: for each device type
         E = this.elements(this.grp_cids==cid); % K element with same class
+	% mrg: Ne appears to be the number of terminals of each device.
         M = this.grp_maps{cid}; [Ne,K] = size(M); % M is Ne x K
+	% mrg: M(which_terminal, which_device) -> which_circuit_node
         V = zeros(Ne,P,K);                    % Ne x P x K
-        for ind=1:K
+        for ind=1:K  % mrg: for each device
+	  % mrg: V(which_terminal, which_point_in_phase_space, which_device)
           V(:,:,ind) = v(M(:,ind),:);
         end
+	% mrg: I'm guessing that Ie has the same indices as V
         Ie = E{1}.I_objs(E,V,varargin{:});    % call static method by any object
         Ifull = zeros(N,P,K);                 % Ie is Ne x P x K, Ifull is N x P x K
+	% mrg: I suspect that the code below for combining node currents has
+	%   has a latent bug.  If the source and drain of a transistor are
+	%   connected to the same node (e.g. a varactor) then there will be
+	%   conflicting writes to I_full.  If we ignore leakage currents (e.g.
+	%   gate leakage and junction leakage), then I_ds is 0; so the conflict
+	%   is "harmless".  OTOH, if we make this simulator useful enough that
+	%   it gets used for real analog circuits with real models, then we'll
+	%   have a hard-to-debug discrepancy with SPICE.  We should confirm this
+	%   latent bug with Chao and then fix it.  The fix I would do is make
+	%   a N x P x K x Ne sparse matrix of currents.  Then sum along the
+	%   3rd and 4th dimensions to get Ifull.
         for ind=1:K
           Ifull(M(:,ind),:,ind) = Ie(:,:,ind); 
         end
@@ -806,23 +919,134 @@ classdef circuit < matlab.mixin.Copyable %handle
         end
       end
     end
+    
+    %Function which find the name of a node based on its index, function
+    %will recursively traverse the tree to find a node name which is nested
+    %in multiple layers of sub-circuits
 
     function names = find_node_name(this,ind)
       if(nargin<2||isempty(ind)), ind=1:this.nodeNum; end
       if(numel(ind)==1&&ind<=0), ind = 1:this.nodeNum; end
       if(any(ind<=0)), error('index must be positive');end
       names = {};
+      
+      % convert maps to matrix
+      conn = zeros(this.nodeNum,length(this.elements));
+      for i=1:length(this.maps)
+        m = this.maps{i}; conn(m,i) = 1;
+      end
+      
       for i=1:length(ind)
         if(ind(i)<=length(this.ports))
-          name = this.ports{ind(i)}.name;
+          name = sprintf('Node %d:\t%s of %s',ind,this.ports{ind(i)}.name,class(this));
         else
-          name = ['internal_',num2str(ind(i)-length(this.ports))];
+            name = sprintf('Node %d:\t Internal %s\n',ind,num2str(ind(i)-length(this.ports)));
+            es = find(conn(ind,:)); % connected elements
+            for j=1:length(es)
+                eind = es(j); e = this.elements{eind}; m = this.maps{eind};
+                epind = find(m==ind);  % in case connected to multiple nodes
+                %the recursion here prints out the result in a bit of a
+                %strange way, it has the right information, revisit
+                %this later to make it nicer.
+                for k=1:length(epind)
+                    str = sprintf('\t<->%s of %s@%s\n',e.find_node_name(epind(k)),e.name,class(e));
+                    %strs{end+1} = str; 
+                    %fprintf(str);
+                    name = sprintf('%s%s',name,str);
+                end
+            end
         end
         names{i} = name;
       end
       % return string for one and cell for a set
       if(length(names)==1), names = names{1}; end
     end
+    
+    %Function returns an abbreviated name of the node in question, used to
+    %create the circuit path structure.
+    
+     function names = find_node_name_short(this,ind)
+      if(nargin<2||isempty(ind)), ind=1:this.nodeNum; end
+      if(numel(ind)==1&&ind<=0), ind = 1:this.nodeNum; end
+      if(any(ind<=0)), error('index must be positive');end
+      names = {};
+      
+      % convert maps to matrix
+      conn = zeros(this.nodeNum,length(this.elements));
+      for i=1:length(this.maps)
+        m = this.maps{i}; conn(m,i) = 1;
+      end
+      
+      for i=1:length(ind)
+        if(ind(i)<=length(this.ports))
+          name = sprintf(this.ports{ind(i)}.name);
+        else
+            es = find(conn(ind,:)); % connected elements
+            for j=1:length(es)
+                eind = es(j); e = this.elements{eind}; m = this.maps{eind};
+                epind = find(m==ind);  % in case connected to multiple nodes
+                %the recursion here prints out the result in a bit of a
+                %strange way, it has the right information, revisit
+                %this later to make it nicer.
+                for k=1:length(epind)
+                    name = sprintf('%s of %s',e.find_node_name_short(epind(k)),e.name);
+                    %strs{end+1} = str; 
+                    %fprintf(str);
+                end
+            end
+        end
+        names{i} = name;
+      end
+      % return string for one and cell for a set
+      if(length(names)==1), names = names{1}; end
+     end
+    
+     % Function which decomposes the entire circuit into node names based
+     % on the circuit definition, the tree structure is preserved in this
+     % structure. This object is created before the circuit gets flattened.
+    
+    function path = find_path(this,ind)
+        if(nargin<2||isempty(ind)), ind=1:this.nodeNum; end
+        if(numel(ind)==1&&ind<=0), ind = 1:this.nodeNum; end
+        if(any(ind<=0)), error('index must be positive');end
+        path = {};
+        
+        % convert maps to matrix
+        conn = zeros(this.nodeNum,length(this.elements));
+        for i=1:length(this.maps)
+            m = this.maps{i}; conn(m,i) = 1;
+        end
+        
+        for i=1:length(ind)
+            if(ind(i)<=length(this.ports))
+                pathToStore = {ind(i),this.ports{ind(i)}.name,this.name};
+            else
+                
+                es = find(conn(ind,:)); % connected elements
+                subPaths = cell(1,length(es));
+                for j=1:length(es)
+                    eind = es(j); e = this.elements{eind}; m = this.maps{eind};
+                    epind = find(m==ind);  % in case connected to multiple nodes
+                    multiPath = cell(1,length(epind));
+                    %the recursion here prints out the result in a bit of a
+                    %strange way, it has the right information, revisit
+                    %this later to make it nicer.
+                    for k=1:length(epind)
+                        multiPath{k} = e.find_path(epind(k));
+                        %fprintf(str);
+                    end
+                    subPaths{j} = {ind(i),multiPath,e.name};
+                end
+                pathToStore = {ind(i),subPaths,this.name};
+            end
+            path{i} = pathToStore;
+        end
+        % return string for one and cell for a set
+        if(length(path)==1), path = path{1}; end
+    end
+    
+    %Function to display the circuit tree structure, becomes difficult to
+    %decipher after the circuit is flattened.
 
     function strs = print_circuit_tree(this,prefix)
       if(nargin<2),prefix='  '; end;
@@ -834,6 +1058,9 @@ classdef circuit < matlab.mixin.Copyable %handle
         strs(end+1:end+length(estrs)) = estrs;
       end
     end
+    
+    % Function which displays the status of the circuit: name, flattened,
+    % vectorized
 
     function strs = print_status(this,prefix)
       if(nargin<2),prefix='  '; end;
@@ -844,14 +1071,11 @@ classdef circuit < matlab.mixin.Copyable %handle
         strs(end+1:end+length(estrs)) = estrs;
       end
     end
+    
+    % Function which prints out all the nodes of the circuit
 
     function strs = print_nodes(this)
       assert(this.finalized);
-      % convert maps to matrix
-      conn = zeros(this.nodeNum,length(this.elements));
-      for i=1:length(this.maps)
-        m = this.maps{i}; conn(m,i) = 1;
-      end
 
       strs = {};
       str = sprintf('---- Circuit nodes of %s: ----\n',this.name);
@@ -862,24 +1086,69 @@ classdef circuit < matlab.mixin.Copyable %handle
           str = sprintf('%d visible ports:\n',length(this.ports));
           strs{end+1} = str; fprintf(str);
         end
-        str = sprintf('  %s\n',this.find_node_name(i)); 
+        str = sprintf('%s\n',this.find_node_name(i)); 
         strs{end+1} = str; fprintf(str);
-        es = find(conn(i,:)); % connected elements
-        for j=1:length(es)
-          eind = es(j); e = this.elements{eind}; m = this.maps{eind};
-          epind = find(m==i);  % in case connected to multiple nodes
-          for k=1:length(epind)
-            str = sprintf('    <->%s of %s@%s\n',e.find_node_name(epind(k)),e.name,class(e)); 
-            strs{end+1} = str; fprintf(str);
-          end
-        end
         if(i==length(this.ports)) 
           str = sprintf('%d internal nodes:\n',this.nodeNum-length(this.ports)); 
           strs{end+1} = str; fprintf(str);
         end
       end % for
     end % function
-
+    
+    % Function which creates a circuit path structure to go from node names
+    % to node numbers, very useful for debugging and explaining nodes in
+    % the testbench framework
+    
+    function pathNodes = createPath(this)
+        assert(this.finalized);
+        % convert maps to matrix
+        
+        pathNodes = struct();
+        
+        N = this.nodeNum;
+        
+        for i=1:N
+            pathNodes = this.add_path(i,this.find_path(i),pathNodes,this.name);
+            
+        end
+            
+    end
+    
+    % Function used in the creation of the circuit path and names, used to
+    % recursively traverse the circuit structure.
+    
+    function pathNodes = add_path(this,id,p,pathNodes,name)
+        
+        if(strcmp(p{3},name))
+            if(iscell(p{2}))
+                for i = 1:length(p{2})
+                    pathNodes = this.add_path(id,p{2}{i},pathNodes,name);
+                end
+            else
+                pathNodes.(p{2}) = id;
+            end
+        else
+            try
+                pathNodes.(p{3});
+            catch
+                if(iscell(p{2}))
+                    pathNodes.(p{3}) = struct;
+                else
+                    pathNodes.(p{2}) = id;
+                end
+            end
+            if(iscell(p{2}))
+                for i = 1:length(p{2})
+                    pathNodes.(p{3}) = this.add_path(id,p{2}{i},pathNodes.(p{3}),p{3});
+                end
+            else
+                pathNodes.(p{2}) = id;
+            end
+        end
+        
+    end
+    
+    
   end % methods
 
 end % class
