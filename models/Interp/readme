@@ -1,0 +1,46 @@
+This package provide interpolated functions based on models from ccm_getModel.
+It provides current functions or Jacobian matrix functions by two interfaces: 
+  'ids_device': ids function
+  'jac_device': jacobian function
+
+It provides three interpolation methods for the current functions (Ids). 
+  'lookup':   find the nearest grid point and use its value
+  'linear':   find all neighbors and use bilinear interpolation.
+  'coswin':   find all neighbors and use 'coswin window' interpolation.
+              The 'coswin window' parameter is computed by interp_compWin function.
+It supports both 'simu' and 'quad' models. 
+The continuity of these interpolated functions are
+           simu quad
+  lookup   x      x
+  linear   C^0   C^0
+  coswin   C^n   C^n
+NOTE: sometime, the difference between 'simu' and 'quad' models are visibly large
+
+For the Jacobian matrix function (d/dt Ids), it uses the 'coswin' method for the Ids. 
+(This is because 'linear' and 'lookup' are not C^1, therefore Jacobian is not C^0 by using them) 
+It's also recommended to use 'quad' models. (For simu models with coswin interpolation, the Jacobian
+is a linear combination of sin/cos functions, therefore, it always oscillates). 
+See the 'interp_jacob' function for details.
+
+It also provide numerical methods for Jacobian matrix that supports all interpolation methods 
+NOTE, ususally the numerical method works (x for bad, v for good).
+      lookup linear coswin
+ simu   x      v     x
+ quad   x      v     v
+See the 'interp_jacob_num' function for details.
+('lookup' is not continous, therefore, numerical results are usually bad. 'linear' is good. 
+ 'coswin' with simu models  suffers the same problem as above.)
+
+
+NOTE: It requires the models must have the following informations: 
+     data: model data for each grid 
+     GRID: grid information
+       v0: initial value for grid 0
+       nv: number of grids
+       dv: unit length of grids
+     SIZE: circuit size
+       len,wid: length and width
+  	 META.type: 'simu' or 'quad' models
+NOTE: the 'err' information in the model is ignored
+
+NOTE: This package assumes the current function is linear with the size of the circuit (length/width) 
