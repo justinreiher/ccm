@@ -1,4 +1,4 @@
-function [Id_ret, intermediate_value,dV] = mvs_Id ( params, biasVoltages) %Vd,Vg,Vs,Vb )
+function [Id_ret, intermediate_value] = mvs_Id ( params, biasVoltages) %Vd,Vg,Vs,Vb )
 % Symmetrical Short-channel MOSFET Compact Model (Revised)
 %   for Automatic Differentiation
 
@@ -232,8 +232,7 @@ function [Id_ret, intermediate_value,dV] = mvs_Id ( params, biasVoltages) %Vd,Vg
     % [VsInt] =  [1-Rs*d/dVs(Id)   -Rs*d/dVd(Id) ]  [dVs/dI]  
     % [VdInt] =  [Rd*d/dVs(Id)     1+Rd*d/dVd(Id)]  [dVd/dI]
     
-    % dV is not used at this moment.
-dV=Id;        
+    % dV is not used at this moment.       
        
      Vsint=Vs+Id.*(Rs0*1e-4./W).*dir;
      Vdint=Vd-Id.*(Rd0*1e-4./W).*dir;

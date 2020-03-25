@@ -3,11 +3,11 @@ classdef ekvModel < model
     %currents for the MVS model from: 
     
     properties
-        pmosParams = [];
-        nmosParams = [];
+        pmosParams  = [];
+        nmosParams  = [];
         junctionCap = [];
-        capPerUnit = [];
-        capScale = [];
+        capPerUnit  = [];
+        capScale    = [];
     end
     
     methods
@@ -166,11 +166,11 @@ classdef ekvModel < model
             %get the capacitance model to use
             capModel = tbOptions.capModel;
             
-            if(deviceType == 'pmos')
+            if(strcmp(deviceType,'pmos'))
                 txParams = this.pmosParams;
             end
             
-            if(deviceType == 'nmos')
+            if(strcmp(deviceType,'nmos'))
                 txParams = this.nmosParams;
             end
             
@@ -257,6 +257,9 @@ classdef ekvModel < model
                         Cmos(4+(i-1)*numTerminals,devMap(4,i)) = devCap(4,1)+devCap(4,2) + devCap(4,3);
                     end
                     Cmos = this.capScale*Cmos;
+                    
+                otherwise
+                        error(strcat(capModel,' is an unknown Capacitor model'));
             end
         
         

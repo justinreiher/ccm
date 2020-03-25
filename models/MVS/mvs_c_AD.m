@@ -1,13 +1,16 @@
 %%%
 % Function for returning node charges.
 % Yan Peng, UBC, 2016/10/24
+%
+% Justin REiher, UBC, 2020/03/24
+% Modified function to return Capacitance - Requires AD
 
-function [Q] = mvs_c(params, init, iv, TxRatio)
+function [C] = mvs_c_AD(params, init, iv)
 
 % Parameters
 version = params.version;
 type = params.type;
-W = params.W*TxRatio;
+W = params.W;
 Lgdr = params.Lgdr;
 dLg = params.dLg;
 Cg = params.Cg;
@@ -216,4 +219,8 @@ Qd = -W .* ( Qinvd + Qdov + Qdif );           %   d-terminal charge
 Qg = -( Qs + Qd + Qb );            %   g-terminal charge
 
 Q = [Qd; Qg; Qs; Qb];
+
+
+
+
 end
