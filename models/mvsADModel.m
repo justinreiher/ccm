@@ -86,8 +86,10 @@ classdef mvsADModel < model
             jacobian = J;
         end
         
-        function [Imos,capInfo] = ImosEval(this,deviceType,deviceParams,autoConnect,Vin)
+        function [Imos,capInfo] = ImosEval(this,deviceType,deviceParams,autoConnect,input)
             
+            Vin = input{1};
+            IpreComputed = input{2};
 
             
             widVec  = [deviceParams.wid{:}];
@@ -149,16 +151,6 @@ classdef mvsADModel < model
             txParams.W = widMos';
             txParams.Lgdr = txParams.Lgdr.*rlenMos';
             
-            if(isa(Vin,'gradient') || isa(Vin,'hessian'))
-                V = Vin.x;
-                IpreComputed = mvs_Id(txParams,V);
-            else
-                % if the variable was not previously initalized as an AD
-                % variable (gradient or hessian), make it a gradient
-                % variable
-                IpreComputed = mvs_Id(txParams,Vin);
-                V = gradientinit(Vin);
-            end
             
             [Ids,capInfo] = mvs_Id_AD(txParams,Vin,IpreComputed);
             factor = repmat(I_factor,1,numPoints*numDevices);
@@ -168,6 +160,7 @@ classdef mvsADModel < model
             I = I.*factor;
             
             Imos = reshape(I,numTerminals*numDevices,[]);
+            
         end
         
         function Cmos = CmosEval(this,deviceParams,deviceType,Vin,tbOptions)
@@ -217,16 +210,45 @@ classdef mvsADModel < model
                     widMos = reshape(repmat(widVec,1,numPoints)',numPoints*numDevices,1);
                     rlenMos = reshape(repmat(rlenVec,1,numPoints)',numPoints*numDevices,1);
                     devMap  = repmat(devMap,1,numPoints);
-                    cap = (this.capPerUnit.*widMos.*rlenMos*txParams.Lg)';
                     %%%%
                     
                     jCap = this.junctionCap;
                     jCap.W = widMos';
                     jCap.Lgdr = (rlenMos.*jCap.Lgdr)';
-                    deviceParams.capParams.junctionCap = jCap;
-                    deviceParams.capParams.cap = cap;
+                    
                     Cmos = zeros(numDevices*numTerminals*numPoints,numNodes)*V(1);
                     
+                    deviceParams.capParams.junctionCap = jCap;
+                    
+                    Cdev = mvs_c_AD(txParams,Vgrad,deviceParams.capParams);
+                    
+                    for i = 1:numDevices*numPoints
+                        devCap = Cdev(:,:,i);
+                        %Capacitances associated with computing
+                        %Vdrain_dot
+                        Cmos(1+(i-1)*numTerminals,devMap(1,i)) = devCap(1,2) + devCap(1,4) + devCap(1,3);
+                        Cmos(1+(i-1)*numTerminals,devMap(2,i)) = -devCap(2,1);
+                        Cmos(1+(i-1)*numTerminals,devMap(3,i)) = -devCap(3,1);
+                        Cmos(1+(i-1)*numTerminals,devMap(4,i)) = -devCap(4,1);
+                        %Capacitances associated with computing
+                        %Vgate_dot
+                        Cmos(2+(i-1)*numTerminals,devMap(1,i)) = -devCap(1,2);
+                        Cmos(2+(i-1)*numTerminals,devMap(2,i)) = devCap(2,1) + devCap(2,3) + devCap(2,4);
+                        Cmos(2+(i-1)*numTerminals,devMap(3,i)) = -devCap(3,2);
+                        Cmos(2+(i-1)*numTerminals,devMap(4,i)) = -devCap(4,2);
+                        %Capacitances associated with computing
+                        %Vsource_dot
+                        Cmos(3+(i-1)*numTerminals,devMap(1,i)) = -devCap(1,3);
+                        Cmos(3+(i-1)*numTerminals,devMap(2,i)) = -devCap(2,3);
+                        Cmos(3+(i-1)*numTerminals,devMap(3,i)) = devCap(3,1) + devCap(3,2) + devCap(3,4);
+                        Cmos(3+(i-1)*numTerminals,devMap(4,i)) = -devCap(4,3);
+                        %Capacitances associated with computing
+                        %Vbody_dot
+                        Cmos(4+(i-1)*numTerminals,devMap(1,i)) = -devCap(1,4);
+                        Cmos(4+(i-1)*numTerminals,devMap(2,i)) = -devCap(2,4);
+                        Cmos(4+(i-1)*numTerminals,devMap(3,i)) = -devCap(3,4);
+                        Cmos(4+(i-1)*numTerminals,devMap(4,i)) = devCap(4,1)+devCap(4,2) + devCap(4,3);
+                    end
                     
                 otherwise
                     error(strcat(capModel,' is an unknown Capacitor model'));

@@ -182,7 +182,7 @@ classdef mvsModel < model
                     
                     deviceParams.capParams.junctionCap = jCap;
                     
-                    Cdev = mvs_c(txParams,Vgrad,deviceParams.capParams);
+                    Cdev = mvs_c_AD(txParams,Vgrad,deviceParams.capParams);
                     
                     for i = 1:numDevices*numPoints
                         devCap = Cdev(:,:,i);
