@@ -1,9 +1,9 @@
- function [value,isterminal,direction] = stopToDigitalSim(t,Vin,vDot)
+ function [value,isterminal,direction] = stopToDigitalSim(t,Vin,vDot,digitalSimOptions)
         numOfNodes = length(Vin);
-        vdd = 1.0;
-        minSimTime = 6e-10;
-        threshold = 0.1;
-        stopGain = 30;
+        vdd = digitalSimOptions.vdd;
+        minSimTime = digitalSimOptions.minSimTime;
+        threshold = digitalSimOptions.threshold;
+        stopGain = digitalSimOptions.stopGain;
         
         stopCondition = sum(tanh(stopGain*(vdd*(1-threshold)*ones(1,numOfNodes)*1.05-vdd/2).^2 ...
           -(threshold - vdd/2)^2));

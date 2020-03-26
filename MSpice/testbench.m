@@ -348,6 +348,18 @@ classdef testbench < handle
         end
             
     end
+    
+    function tbOptions = getTestbenchOptions(this)
+        tbOptions = this.tbOptions;
+    end
+    
+    function setTestbenchOptions(this,tbOptions)
+        this.tbOptions = tbOptions;
+    end
+    
+    function setMatrixMap(this,matrixMap)
+        this.matrixMap = matrixMap;
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Functions for coho
@@ -541,50 +553,18 @@ classdef testbench < handle
         end
     
     end
-     
-    
-  end
 
-  methods(Access='private')
-    % compute the voltage for all circuit nodes
-    % v_ode: each column for a time
-    function vfull = vfull(this,t,v_ode)
-      assert(length(t)==size(v_ode,2));
-      % voltages of sources at time t
-      vs = this.eval_vs(t);
-      % assign voltage source 
-      iss = this.is_src;
-      vfull = zeros(this.circuit.nodeNum,size(v_ode,2));
-      vfull(~iss,:) = v_ode;
-      vfull(this.map,:) = vs; % map to circuit port
-      
-      %Also need to add any internal voltage sources that may exist
-      
-      circuitMapping = this.circuitMap;
-      %%%%%%
-      %The circuit map returns a cell array where each entry contains is of
-      %the form {ElementProperties,Map}, the elements are a cell array of all the
-      %same kind of elements and the Map is the map that corresponds to the
-      %appropriate mapping for those elements.
-      %%%%%
-      [~,numUniqueElements] = size(circuitMapping);
-      
-      for i = 1:numUniqueElements
-          dev = circuitMapping{i};
-          devParams = dev{1};
-          devMap = dev{2};
-          if(strcmp(devParams.deviceType, 'vsrc'))
-              internalVsrc = dev{3};
-              for j = 1:length(internalVsrc)
-                  src = internalVsrc{j};
-                  vSrcMap = devMap(:,j);
-                  v = vfull(vSrcMap,:);
-                  vfull(vSrcMap(1),:) = v(2,:) + src.V(t);
-              end
-          end
-      end
-      
+    function setOdeSave(this,ind,data)
+        odeSaveCopy = this.odeSave;
+        odeSaveCopy{1} = ind;
+        odeSaveCopy{2} = data;
+        this.odeSave = odeSaveCopy;
     end
+    
+    function odeSave = getOdeSave(this)
+        odeSave = this.odeSave;
+    end
+   
     % compute voltage for circuit inputs
     % vs: each column for a time
     function vs = eval_vs(this,t)
@@ -629,6 +609,48 @@ classdef testbench < handle
             maps{i} = Mdev;
         end
     end
-
+  end
+    
+    methods(Access='private')
+        % compute the voltage for all circuit nodes
+        % v_ode: each column for a time
+        
+        function vfull = vfull(this,t,v_ode)
+            assert(length(t)==size(v_ode,2));
+            % voltages of sources at time t
+            vs = this.eval_vs(t);
+            % assign voltage source
+            iss = this.is_src;
+            vfull = zeros(this.circuit.nodeNum,size(v_ode,2));
+            vfull(~iss,:) = v_ode;
+            vfull(this.map,:) = vs; % map to circuit port
+            
+            %Also need to add any internal voltage sources that may exist
+            
+            circuitMapping = this.circuitMap;
+            %%%%%%
+            %The circuit map returns a cell array where each entry contains is of
+            %the form {ElementProperties,Map}, the elements are a cell array of all the
+            %same kind of elements and the Map is the map that corresponds to the
+            %appropriate mapping for those elements.
+            %%%%%
+            [~,numUniqueElements] = size(circuitMapping);
+            
+            for i = 1:numUniqueElements
+                dev = circuitMapping{i};
+                devParams = dev{1};
+                devMap = dev{2};
+                if(strcmp(devParams.deviceType, 'vsrc'))
+                    internalVsrc = dev{3};
+                    for j = 1:length(internalVsrc)
+                        src = internalVsrc{j};
+                        vSrcMap = devMap(:,j);
+                        v = vfull(vSrcMap,:);
+                        vfull(vSrcMap(1),:) = v(2,:) + src.V(t);
+                    end
+                end
+            end
+            
+        end
   end
 end

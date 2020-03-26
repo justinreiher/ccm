@@ -26,7 +26,7 @@ span = [0 7e-10];
 tCrit = 6.5e-10;
 
 nbPGLatch = nestedBisection(pg,{pg.vdd,pg.gnd,pg.clk,pg.clkbar,pg.d},...
-    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{pg.d,din},clk,mask,uVcrit,myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{pg.d,din},clk,mask,myDict,'EKV','PTM 45nmHP');
 
 nbPGLAnalysis = nestedBisectionAnalysis(pg,{pg.vdd,pg.gnd,pg.clk,pg.clkbar,pg.d},...
     {vdd,gnd,clk,clkbar,vdd},{pg.d,din},clk,mask(end),myDict,'EKV','PTM 45nmHP');
