@@ -101,11 +101,13 @@ version = params.version;
        
         
         if(any(dvds>Vds))
+            divCount = 1;
             while(any(dvds>Vds))
                 index = find(dvds > Vds);
                 dvds(index) = 0.5*dvds(index);
-            end
-            
+                divCount = divCount + 1;
+                if divCount > 500,break, end %prevent an infinite loop
+            end        
         end
         
         
