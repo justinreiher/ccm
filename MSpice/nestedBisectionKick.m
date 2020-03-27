@@ -251,18 +251,26 @@ classdef nestedBisection < testbench
     % Functions for simulation
     
     % This function simulate the circuit
-    function [bisectionRuns] = simulate(this,filename,tspan,tCrit,v0,opts)
+    function [bisectionRuns] = simulate(this,filename,tspan,tCrit,kickData,v0,opts)
         
         if(ischar(filename)||isstring(filename))
             fprintf('starting nested bisection and saving data to filename: %s ...\n',filename);
         else
             error('filename needs to be a string or array of characters')
         end
-        n = this.circuit.nodeNum;
+        if(isempty(kickData))
+            error('Kick data needs to be specified as struct: kickTime,kickPercentage,kickNode')
+        end
+        
+        kickTime = kickData.kickTime*this.tbOptions.capScale;
+        kickPercentage = kickData.kickPercentage;
+        kickNodes = kickData.kickNodes;
+        
+        n = this.synchronizerCCT.nodeNum;
         tspan = tspan*this.tbOptions.capScale;
         tCrit = tCrit*this.tbOptions.capScale;
         % initial values
-        if(nargin < 5)
+        if(nargin < 6)
             v0 =zeros(n,1); % initialize all nodes to zero
         elseif(iscell(v0)) % user specified a few nodes to initialize
             v00 = v0;
@@ -271,7 +279,7 @@ classdef nestedBisection < testbench
         end
         % Integrator
         %set the default integrator options if none are specified
-        if(nargin < 6), opts = this.tbOptions.integratorOptions; end
+        if(nargin < 7), opts = this.tbOptions.integratorOptions; end
         if(isfield('Integrator', opts))
             integrator = opts.Integrator;
         else
@@ -300,7 +308,7 @@ classdef nestedBisection < testbench
         
         if(isempty(v0_ode))
             t = reshape(tspan, [], 1);
-            v0_ode = zeros(length(t), 0);
+            v_ode = zeros(length(t), 0);
         else
             %the following is to find where the clock edges are, split the
             %time interval into approximately 1ps resolution
@@ -331,13 +339,15 @@ classdef nestedBisection < testbench
             clk = @(t) this.clockSource.V(t) - 0.5;
             tOff = fzero(clk,clockEdges(1)/this.tbOptions.capScale);
             numStatesPerCCT = length(v0_ode)/this.tbOptions.numParallelCCTs;
+            this.tbOptions.numNodes = numStatesPerCCT + length(this.sources);
             plotHandles = this.bisectionPlotSetup(tspan./this.tbOptions.capScale,tCrit/this.tbOptions.capScale,tOff);
             
+            outputNode = this.nodeMask(end);
             tw = 1;
 
             stop = false;
 
-            fprintf('Starting bisection...\n')
+            fprintf('Starting nested bisection...\n')
             tic()
             while(~stop)
                 
@@ -346,14 +356,37 @@ classdef nestedBisection < testbench
                     data = cell(5,5000);
                     this.setOdeSave(ind,data);
                 end
-                
-                [t, v_ode,timeEvent,vEvent,indexEvent] = integrator(@(t, v_ode)(this.dV_ode(t, v_ode)), [startTime stopTime], v0_ode, opts);
+                %if the start time is less than the time at which the kick
+                %occurs, then we simulate upto the kickTime or less if the
+                %synchronizer settles
+                if(startTime < kickTime)
+                    [tBeforeKick, vBeforeKick,timeEvent,vEvent,indexEvent] = integrator(@(tBeforeKick, vBeforeKick)(this.dV_ode(tBeforeKick, vBeforeKick)), [startTime,kickTime], v0_ode, opts);
+                    %Here we check to see if we actually simulated to the
+                    %time of the kick, if we have then we apply the kick,
+                    %if not then we resume bisection as normal. If we have
+                    %simulated upto the time of the kick, we apply the kick
+                    %and keep simulating.
+                    v_ode = vBeforeKick;
+                    t = tBeforeKick;
+                    if(tBeforeKick(end) >= kickTime)
+                        icCont = reshape(vBeforeKick(end,:),[numStatesPerCCT, this.tbOptions.numParallelCCTs]);
+                        icCont(kickNodes,:) = kickPercentage*icCont(kickNodes,:);
+                        icCont = reshape(icCont,[1, numStatesPerCCT*this.tbOptions.numParallelCCTs]);
+                        [tAfterKick,vAfterKick] = integrator(@(tAfterKick,vAfterKick)(this.dV_ode(tAfterKick,vAfterKick)),[kickTime,stopTime], icCont,opts);
+                        v_ode = [vBeforeKick;vAfterKick];
+                        t = [tBeforeKick;tAfterKick];
+                    end
+                    %If we have progressed beyond the time of the kick,
+                    %then we continue simulating as normal.
+                else
+                    [t,v_ode,timeEvent,vEvent,indexEvent] = integrator(@(t,v_ode)(this.dV_ode(t,v_ode)),[startTime,stopTime],v0_ode,opts);
+                end
                 
                 indAfterSettle = t > this.tbOptions.transSettle*this.tbOptions.capScale;
                 t = t(indAfterSettle);
                 tEnd = t(end);
                 v_ode = v_ode(indAfterSettle,:);
-                this.bisectionPlotV(plotHandles(1),t./this.tbOptions.capScale-tOff,v_ode)  
+                this.bisectionPlotV(plotHandles(1),t./this.tbOptions.capScale - tOff,v_ode)  
                 
                 
                 index = this.findNextBracket(v_ode(end,:),t(end),clockEdges);
@@ -370,17 +403,19 @@ classdef nestedBisection < testbench
                 
                 %save the trajectory which went high and the trajectory
                 %which went low
-                vTrajH = v_ode(:,1+numStatesPerCCT*(index(2)-1):numStatesPerCCT*index(2))';
-                vTrajL = v_ode(:,1+numStatesPerCCT*(index(1)-1):numStatesPerCCT*index(1))';
-     
+                vTrajH = v_ode(:,1+numStatesPerCCT*(index(2)-2):numStatesPerCCT*(index(2)-1))';    
+                vTrajL = v_ode(:,1+numStatesPerCCT*(index(1)):numStatesPerCCT*(index(1)+1))';
+                
                 %if the simulation ends at a time greater than the
                 %specified tCrit, call the function nestedBisectionStop to
                 %determine if the stopping condition has been met.
                 if(tEnd > tCrit)
                     stop = nestedBisectionStop(this.tbOptions,numStatesPerCCT,v_ode,tCrit,t);
                 end
+
                 
                 this.bisectionPlotBeta(plotHandles{2},linTint./this.tbOptions.capScale-tOff,betaApprox);
+
                 
                 t = t';
                 t = t./this.tbOptions.capScale;

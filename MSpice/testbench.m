@@ -57,6 +57,10 @@
 %   setTestbenchOptions:  Method to apply new set of testbench options to
 %                         this testbench
 %
+%   setSimTimeVoltage:  Method to apply user specified time and voltage to
+%                       the testbench. Allows the user to supply a
+%                       previously saved trajectory to the testbench.
+%
 %   It also provides function for verification (only if voltage sources support verification interface)
 %   [c,err] = dV_ldi(region,states): LDI model for the whole system 
 %     region: an object of "shape" class
@@ -204,7 +208,16 @@ classdef testbench < handle
       if(any(this.map==0))
         error('can not find ports'); 
       end
-       this.matrixMap = this.computeMapMatrix;
+       
+      % computes the matrix map to simulate the number of specified
+      % parallel circuits
+      maps = this.computeMapMatrix;
+      M = cell(1,length(maps));
+      for i = 1:length(maps)
+        M{i} = sparse(kron(eye(this.tbOptions.numParallelCCTs),maps{i}));
+      end
+      this.matrixMap = M;
+       
        if(this.tbOptions.debug)
            odeSave = cell(1,5000);
            odeSave{1} = 1;
@@ -402,12 +415,18 @@ classdef testbench < handle
             
     end
     
+    %setter and getter methods
     function tbOptions = getTestbenchOptions(this)
         tbOptions = this.tbOptions;
     end
     
     function setTestbenchOptions(this,tbOptions)
         this.tbOptions = tbOptions;
+    end
+    
+    function setSimTimeVoltage(this,time,voltage)
+        this.simTime = time;
+        this.simVoltage = voltage;
     end
     
 
