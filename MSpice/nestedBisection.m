@@ -95,6 +95,8 @@ classdef nestedBisection < testbench
   end
   properties (GetAccess = 'protected', SetAccess = 'private')
       synchronizerCCTMap;
+      %total circuit mapping
+      syncMatrixMap = [];
   end
   
   methods
@@ -242,7 +244,7 @@ classdef nestedBisection < testbench
       for i = 1:length(maps)
         M{i} = sparse(kron(eye(this.tbOptions.numParallelCCTs),maps{i}));
       end
-      this.setMatrixMap(M);
+      this.syncMatrixMap = M;
             
     end
 
@@ -431,7 +433,7 @@ classdef nestedBisection < testbench
       [~,numUniqueElements] = size(synchronizerCCTMapping);
       Itot = cell(1,numUniqueElements);
       Ctot = cell(1,numUniqueElements);
-      Ms   = this.matrixMap;
+      Ms   = this.syncMatrixMap;
 
       for i = 1:numUniqueElements
           %get the circuit element grouping

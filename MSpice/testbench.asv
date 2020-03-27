@@ -100,10 +100,9 @@
 %   iss = is_src: returns a boolean vector where a 1 is placed if the node
 %   is a source node.
 %
-%   maps = computeMapMatrix: returns a cell array which contains the
-%   mapping information for each unique kind of circuit element present in
-%   the circuit
-%
+%   maps = computeMapMatrix: returns the 
+
+
 
 % Justin Reiher 2020: Change log
 %   Added a model dictionary object which holds information on which models
