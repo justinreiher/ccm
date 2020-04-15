@@ -183,7 +183,7 @@ classdef nestedBisection < testbench
       if(nargin<4), error('a model dictionary is required'); end
       if(nargin<10), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
       if(nargin<11)
-          integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-6);
+          integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-6);%,'Events',@this.stopCriteria);
           
           %%%%%% the following default options are for nested bisection of
           %%%%%% the synchronizer analysed in the ASYNC 2018 paper, i.e. a
@@ -283,19 +283,6 @@ classdef nestedBisection < testbench
         v0_ode = v0(isOde);
         v0_ode = repmat(v0_ode,[this.tbOptions.numParallelCCTs,1]); %set up n parallel circuits to run concurrently
         
-        %%%Maybe this is not quite true, because the stopping condition is
-        %%%not perfect
-        
-        %determine how many bisection restarts need to happen to acheive a
-        %data transition window of at least timeWindow, the number 3 comes
-        %from the fact that there is a step out of 1 at each bisection. The
-        %ceiling is taken so that it actually makes the time window smaller
-        %than the required specification.
-        %fractionPerBisection = log10(3/(this.tbOptions.numParallelCCTs-1));
-        %numIter = ceil(log10(this.timeWindow)/fractionPerBisection)*1.1;
-        
-        %%%
-        
         initialInterval = this.dinInterval;
         
         if(isempty(v0_ode))
@@ -328,7 +315,7 @@ classdef nestedBisection < testbench
             bisectionData{14,1} = 'computed trajectories';
             count = 1;
             runningFrac = 1;
-            clk = @(t) this.clockSource.V(t) - 0.5;
+            clk = @(t) this.clockSource.V(t) - 0.5*this.tbOptions.vdd;
             tOff = fzero(clk,clockEdges(1)/this.tbOptions.capScale);
             numStatesPerCCT = length(v0_ode)/this.tbOptions.numParallelCCTs;
             plotHandles = this.bisectionPlotSetup(tspan./this.tbOptions.capScale,tCrit/this.tbOptions.capScale,tOff);

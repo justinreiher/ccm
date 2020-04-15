@@ -1,4 +1,4 @@
-% testbench is a superclass of nestedBisection, nestedBisection has the
+% testbench is a superclass of nestedBisectionKick, nestedBisectionKick has the
 % following properties:
 %   inputSource: the input to the synchronizer, must implement V(t,tin),
 %   where tin is a parameter which determines when the input makes a
@@ -12,7 +12,7 @@
 %   the rising/falling edges of the clock.
 %
 % constructor
-%   nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
+%   nestedBisectionKick(synchronizerCCT,ports,sources,dinInterval,dinSource,...
 %                   clockSource,nodeMask,uVcrit,modelDictionary,...
 %                   defaultModel,defaultModelProcess,varargin) 
 %       synchronizerCCT: The synchronizer circuit definition
@@ -39,8 +39,19 @@
 %          the voltage source is applied to the corresponding port
 % methods
 %   It provides functions for simulation
-%   [t,v,dv] = simulate(tspan,v0,opts): this function simulate the circuit. 
+%   [t,v,dv] = simulate(filename,tspan,tCrit,kickData,v0,opts): this function simulate the circuit. 
+%     filename: a string where all the nested bisection data is stored in a
+%     .mat file
 %     tspan:  the range of simulate time 
+%     tCrit:  the user specified critical time at which the synchronizer
+%     must be at a settled value, used as a criteria to stop the simulation
+%     kickData: a struct of the format:
+%                   kickTime - the time in the simulation at which the kick
+%                   occurs
+%                   kickPercentage - the percentage amount by which the
+%                   kicked node/nodes of interest are "kicked"
+%                   kickNodes - the nodes that are modified at time kickTime
+%                   by kickPercentage
 %     v0:     the initial circuit state  
 %     opts:   opt.integrator is a function handle for ODE integrator.
 %             it is also used in the integrator function.
@@ -73,7 +84,7 @@
 %  
 %   
 
-classdef nestedBisection < testbench
+classdef nestedBisectionKick < testbench
   properties (GetAccess='public', SetAccess='private')
 
     %the input source which will be used as a variable for bisection even
@@ -175,7 +186,7 @@ classdef nestedBisection < testbench
       %                                  rising edges.
       %         - 'tCritSettings': 
       
-    function this = nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
+    function this = nestedBisectionKick(synchronizerCCT,ports,sources,dinInterval,dinSource,...
             clockSource,nodeMask,modelDictionary,defaultModel,defaultModelProcess,varargin)
       if(nargin<1), error('not enough parameters'); end
       if(nargin<2), ports = {}; end
@@ -183,7 +194,7 @@ classdef nestedBisection < testbench
       if(nargin<4), error('a model dictionary is required'); end
       if(nargin<10), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
       if(nargin<11)
-          integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-6);
+          integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-6);%,'Events',@this.stopCriteria);
           
           %%%%%% the following default options are for nested bisection of
           %%%%%% the synchronizer analysed in the ASYNC 2018 paper, i.e. a
@@ -259,14 +270,14 @@ classdef nestedBisection < testbench
             error('filename needs to be a string or array of characters')
         end
         if(isempty(kickData))
-            error('Kick data needs to be specified as struct: kickTime,kickPercentage,kickNode')
+            error('Kick data needs to be specified as struct: kickTime,kickPercentage,kickNodes')
         end
         
         kickTime = kickData.kickTime*this.tbOptions.capScale;
         kickPercentage = kickData.kickPercentage;
         kickNodes = kickData.kickNodes;
         
-        n = this.synchronizerCCT.nodeNum;
+        n = this.circuit.nodeNum;
         tspan = tspan*this.tbOptions.capScale;
         tCrit = tCrit*this.tbOptions.capScale;
         % initial values
@@ -290,19 +301,6 @@ classdef nestedBisection < testbench
         isOde = ~this.is_src;
         v0_ode = v0(isOde);
         v0_ode = repmat(v0_ode,[this.tbOptions.numParallelCCTs,1]); %set up n parallel circuits to run concurrently
-        
-        %%%Maybe this is not quite true, because the stopping condition is
-        %%%not perfect
-        
-        %determine how many bisection restarts need to happen to acheive a
-        %data transition window of at least timeWindow, the number 3 comes
-        %from the fact that there is a step out of 1 at each bisection. The
-        %ceiling is taken so that it actually makes the time window smaller
-        %than the required specification.
-        %fractionPerBisection = log10(3/(this.tbOptions.numParallelCCTs-1));
-        %numIter = ceil(log10(this.timeWindow)/fractionPerBisection)*1.1;
-        
-        %%%
         
         initialInterval = this.dinInterval;
         
@@ -336,13 +334,12 @@ classdef nestedBisection < testbench
             bisectionData{14,1} = 'computed trajectories';
             count = 1;
             runningFrac = 1;
-            clk = @(t) this.clockSource.V(t) - 0.5;
+            clk = @(t) this.clockSource.V(t) - 0.5*this.tbOptions.vdd;
             tOff = fzero(clk,clockEdges(1)/this.tbOptions.capScale);
             numStatesPerCCT = length(v0_ode)/this.tbOptions.numParallelCCTs;
-            this.tbOptions.numNodes = numStatesPerCCT + length(this.sources);
+
             plotHandles = this.bisectionPlotSetup(tspan./this.tbOptions.capScale,tCrit/this.tbOptions.capScale,tOff);
             
-            outputNode = this.nodeMask(end);
             tw = 1;
 
             stop = false;
