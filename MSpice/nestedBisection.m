@@ -711,6 +711,10 @@ classdef nestedBisection < testbench
             end
         end
         
+    end
+    
+    methods(Access = 'protected')
+        
         function [index] = findNextBracket(this,Vin,t,edgeTimes)
             intHigh = 0;
             intLow = 100;
