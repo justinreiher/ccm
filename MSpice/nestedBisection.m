@@ -102,7 +102,7 @@
 %
 %     t: the input range to search for clock edges (rising or falling).
 %
-%   private methods:
+%   protected methods:
 %
 %   index = findNextBracket(Vin,t,edgeTimes): Function which returns the
 %   indices of the circuit states upon which the next epoch is subdivided
@@ -324,6 +324,7 @@ classdef nestedBisection < testbench
         
         function this = nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
                 clockSource,nodeMask,modelDictionary,defaultModel,defaultModelProcess,varargin)
+            tbOptions = [];
             if(nargin<1), error('not enough parameters'); end
             if(nargin<2), ports = {}; end
             if(nargin<3), sources = {}; end

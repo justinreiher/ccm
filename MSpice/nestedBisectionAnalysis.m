@@ -1,14 +1,41 @@
-% testbench properties
-%   circuit: the circuit to be tested
-%   sources: voltage sources for each circuit inputs
-%   map:    mapping between voltage sources and circuit inputs
+% testbench is a suplerclass of nestedBisectionAnalysis,
+% nestedBisectionAnalysis has the following properties:
+%   inputSource: the input to the synchronizer, must implement V(t,tin),
+%   where tin is a parameter which determines when the input makes a
+%   transistion from low to high (or high to low).
+%   dinInterval: The interval within which the data transistion is supposed
+%   to occur in to continue the nested bisection algorithm
+%   inputSourceIndex: The index in the circuit description which
+%   corresponds to the input source
+%   clockSource: The clock source for the synchronizer
+%   nodeMask: The set of nodes which are used to bisect on corresponding to
+%   the rising/falling edges of the clock.
 %
 % constructor
-%   testbench(circuit,ports,sources);
-%     circuit: an object of "circuit" class.
+%   nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
+%                   clockSource,nodeMask,uVcrit,modelDictionary,...
+%                   defaultModel,defaultModelProcess,varargin) 
+%       synchronizerCCT: The synchronizer circuit definition
+%       ports:          a cell of "node" objects corresponding to source
+%                       nodes.
+%       sources:        a cell of "circuit" objects which must implement
+%                       their V(t) function.
+%       dinInterval:    The initial interval for tin where one end point
+%                       must correspond to the synchronizer to output a low
+%                       signal and the other end point correspond to the
+%                       synchronizer to output a high signal
+%       dinSource:      The input source whihc must implement a
+%                       parameterized source voltage V(t,tin)
+%       clockSource:    The source used to clock the synchronizer circuit
+%       nodeMask:       A list of nodes which correspond to which node is
+%                       used to determine when the synchronzier has settled
+%                       high and low.
+%   inputSource: the input source which must implement V(t,tin) where tin
+%     is the time of the input transistion to the synchronizer circuit
+%     din
 %     ports:    an cell of "node" objects
-%     sources: an cell of "circuit" objects which must implement the V(t) function.
-%          the size of ports and sources must be the same.
+%     sources: an cell of "circuit" objects which must implement the V(t) function. 
+%          the size of ports and sources must be the same. 
 %          the voltage source is applied to the corresponding port
 % methods
 %   It provides functions for simulation
@@ -46,12 +73,9 @@
 %
 %
 
-classdef nestedBisectionAnalysis < handle
+classdef nestedBisectionAnalysis < testbench
     properties (GetAccess='public', SetAccess='private');
-        % a circuit to be analysed
-        synchronizerCCT =[];
-        % voltage sources
-        sources={};
+       
         %the input source that was used as a variable for bisection even
         %though bisection is done on voltage state the input source needs a
         %variable with which the delay can vary, a requirement to the method.
@@ -59,22 +83,18 @@ classdef nestedBisectionAnalysis < handle
         clockSource = [];
         inputSourceIndex = 0;
         outputNode = 0;
-        % mapping between circuit ports and voltage sources
-        map=[];
-        mapMatrix = [];
-        %the model dictionary that knows about all the models to compute dv for
-        %the various device types know for the simulator.
-        modelDictionary = [];
-        %sets the default model and the AD version required for the analysis.
-        defaultModel = [];
+
+
+        %sets the default AD version of the model required for the analysis.
         defaultModelAD = [];
         
-        %sets simulation options, i.e. model accuracy
-        tbOptions = [];
         
     end
+    
     properties (GetAccess = 'protected', SetAccess = 'private')
         synchronizerCCTMap;
+        %total circuit mapping
+        syncMatrixMap = [];
     end
     
     methods
@@ -154,10 +174,10 @@ classdef nestedBisectionAnalysis < handle
         %                                  of clock edges to find, default is
         %                                  3. This finds both falling and
         %                                  rising edges.
-        %         - 'tCritSettings':
         
         function this = nestedBisectionAnalysis(synchronizerCCT,ports,sources,dinSource,clockSource,metaResolutionNode,...
                 modelDictionary,defaultModel,defaultModelProcess,varargin)
+            tbOptions = [];
             if(nargin<1), error('not enough parameters'); end
             if(nargin<2), ports = {}; end
             if(nargin<3), sources = {}; end
@@ -176,55 +196,44 @@ classdef nestedBisectionAnalysis < handle
                 
                 clkEdgeSettings = struct('low',0.48,'high',0.52,'clkEdgeSpread',20e-12,'numberOfEdges',1);
                 
-                tCritSettings   = struct('clkToQ',65e-12,'margin',2,'threshold',1e-2);
+                tCritSettings   = struct('threshold',1e-2);
                 
-                digitalSimOptions = struct('minSimTime',6e-10,'threshold',0.1,...
+                digitalSimOptions = struct('vdd',1.0,'minSimTime',6e-10,'threshold',0.1,...
                     'stopGain',30);
                 
-          this.tbOptions = struct('capModel','full','capScale',1e10,'vdd',1.0,'temp',298,'numParallelCCTs',10,...
-              'stepOut',1,'polyFitDegree',3,'polyFitError',0.5,'isAD',true,'transSettle',1e-10,...
-              'plotOptions',false,'integratorOptions',integratorOptions,'clockEdgeSettings',clkEdgeSettings,...
-              'tCritSettings',tCritSettings,'digitalSimOptions',digitalSimOptions,...
-                    'betaSimOptions',betaSimOptions,'integratorOptionsBeta',integratorOptionsBeta);
+                tbOptions = struct('capModel','full','capScale',1e10,'vdd',1.0,'temp',298,'numParallelCCTs',10,...
+                    'stepOut',1,'polyFitDegree',3,'polyFitError',0.5,'isAD',true,'transSettle',1e-10,...
+                    'plotOptions',false,'integratorOptions',integratorOptions,'clockEdgeSettings',clkEdgeSettings,...
+                    'tCritSettings',tCritSettings,'digitalSimOptions',digitalSimOptions,...
+                    'betaSimOptions',betaSimOptions,'integratorOptionsBeta',integratorOptionsBeta,'debug',false);
             end
             
             if(length(ports)~=length(sources))
                 error('incorrect size of sources and ports');
             end
             
-            if(isempty(this.tbOptions))
-                this.packageTestbenchOptions(varargin);
+            if(isempty(tbOptions))
+                tbOptions = varargin;
             end
             
-            this.modelDictionary = modelDictionary;
-            this.defaultModel = modelDictionary.getModel(defaultModel,defaultModelProcess,this.tbOptions);
+            this = this@testbench(synchronizerCCT,ports,sources,modelDictionary,defaultModel,defaultModelProcess,tbOptions);
+            
             this.defaultModelAD = modelDictionary.getModel(strcat(defaultModel,' AD'),defaultModelProcess,this.tbOptions);
-            c = synchronizerCCT;
-            c = c.flatten.vectorize; % jr: circuit must be flattened and vectorized
-            %if the defaultModel class cannot compute vectorized quantities it
-            %needs to evaluate them one at time. Not the responsibility of the
-            %testbench.
-            this.synchronizerCCT = c;
-            %  this.circuit = circuit;
-            this.sources = sources;
-            this.map = synchronizerCCT.find_port_index(ports);
             
             this.inputSource = dinSource{2};
-            this.modelDictionary = modelDictionary();
-            this.synchronizerCCTMap = this.synchronizerCCT.getCircuitMap;
-            this.mapMatrix = this.computeMapMatrix;
+           
+            this.synchronizerCCTMap = this.circuit.getCircuitMap;
+            this.syncMatrixMap = this.computeMapMatrix; %this.mapMatrix
             if(any(this.map==0))
                 error('can not find ports');
             end
             
-            % Compute the stopping condition for the digital simulation
-            vdd = this.tbOptions.vdd;
+
             this.clockSource = clockSource;
             this.outputNode = metaResolutionNode - length(this.sources);
             
             %find the index at which the input source is evaluated at
-            this.inputSourceIndex = this.synchronizerCCT.find_port_index(dinSource{1});
-            this.tbOptions.numNodes = this.synchronizerCCT.nodeNum;
+            this.inputSourceIndex = this.circuit.find_port_index(dinSource{1});
             
             
         end
@@ -249,13 +258,13 @@ classdef nestedBisectionAnalysis < handle
             
             if(nargin < 3), error('required to provide bisectionData'), end
             if(nargin < 4), error('required to provide vector to select critical criteria'), end
-            if(length(uVcrit) == this.synchronizerCCT.nodeNum)
+            if(length(uVcrit) == this.circuit.nodeNum)
                 iss = this.is_src;
                 uVcrit = uVcrit(~iss);
                 %normalize the unit vector if it is not already normalized.
                 uVcrit = uVcrit/norm(uVcrit);
             end
-            numStates = this.synchronizerCCT.nodeNum - length(this.sources);
+            numStates = this.circuit.nodeNum - length(this.sources);
             if(length(uVcrit) ~= numStates)
                 error('incompatible uVcrit vector')
             end
@@ -272,8 +281,8 @@ classdef nestedBisectionAnalysis < handle
             
             
             assert(numStates == length(splMeta(1)));
-            [~,numDevN] = size(this.mapMatrix{1});
-            [totalNumStates,numDevP] = size(this.mapMatrix{2});
+            [~,numDevN] = size(this.syncMatrixMap{1});
+            [totalNumStates,numDevP] = size(this.syncMatrixMap{2});
             numDev = numDevN+numDevP;
             
             
@@ -312,13 +321,10 @@ classdef nestedBisectionAnalysis < handle
             end
             toc()
             
-           save(strcat(filename,'_jacAll.mat'),'jac','dhda','vdot','dIdx_Dev','C_Dev');
-%             
-%             %only use 1/10th the data
-%             t = t(1:10:end);
-%             jac = jac(:,1:10:end);
-%             jacDev = jacDev(:,1:10:end);
-%             dhda = dhda(:,1:10:end);
+            if(this.tbOptions.debug)
+                save(strcat(filename,'_jacAll.mat'),'jac','dhda','vdot','dIdx_Dev','C_Dev');
+            end
+
             
             jacP = pchip(t,jac);
             dIdxP = pchip(t,dIdx_Dev);
@@ -374,27 +380,45 @@ classdef nestedBisectionAnalysis < handle
                 'beta_t','jac_t','dhda_t','wNorm_t','lambda','g','dgdt');
         end % analysis
         
-        % This function is a wrapper of circuit.dV by setting input values
-        % as source.V(t) for the Matlab integrator.
+        % This function computes the time derivative of beta
         function dbeta = dbeta_ode(~,Jac,dhda,beta_ode)
             dbeta =  Jac*beta_ode + dhda;
             
         end
         
+        % This function computes the time derivative of u(t)
+        function dwdt = dwdt_ode(~,jac,w_ode)
+            dwdt = -w_ode'*jac;
+            dwdt = dwdt';
+        end
+        
+        % This function computes the synchronizer gain and instantaneous
+        % gain
+        function [g,dgdt,lambda] = gainSync(~,wNorm,jac,beta,dhda)
+            lambda = wNorm'*jac*wNorm;
+            g = wNorm'*beta;
+            dgdt = wNorm'*dhda+lambda*g;
+            
+        end
+        
+        % This function computes the gradient of the synchronizer gain with
+        % respect to the transistor widths at the critical time tCrit.
+        %
+        %   TODO: create a Backward AD version of this function call
         function [dGdw_tCrit,gamma,t] = dGdw(this,traj_t,jac_t,dhda_t,dataTransition,beta_t,timeSpan,uVcrit)
             
-            if(length(uVcrit) == this.synchronizerCCT.nodeNum)
+            if(length(uVcrit) == this.circuit.nodeNum)
                 iss = this.is_src;
                 uVcrit = uVcrit(~iss);
                 %ensures normalization
                 uVcrit = uVcrit/norm(uVcrit);
             end
-            numStates = this.synchronizerCCT.nodeNum - length(this.sources);
+            numStates = this.circuit.nodeNum - length(this.sources);
             if(length(uVcrit) ~= numStates)
                 error('incompatible uVcrit vector')
             end
 
-            deviceMap = this.synchronizerCCT.getCircuitMap;
+            deviceMap = this.circuit.getCircuitMap;
             numUniqueElements = length(deviceMap);
             wid = cell(1,numUniqueElements);
             for i = 1:numUniqueElements
@@ -411,6 +435,9 @@ classdef nestedBisectionAnalysis < handle
             toc()
         end
         
+        % Computes the time derivative of Gamma which is the time
+        % derivative of the partial derivative of beta with respect to the
+        % transistor widths of the synchronizer design
         function gammaDot = gamma_ode(this,t,traj,jac,dhda,beta,gamma,dataTransition)
             
             vfull = this.vfull(t,dataTransition,traj);
@@ -421,7 +448,7 @@ classdef nestedBisectionAnalysis < handle
             % The following is all done to setup the AD variable
             Idev_f = cell(1,numUniqueElements);
             Ctot   = cell(1,numUniqueElements);
-            Ms = this.mapMatrix;
+            Ms = this.syncMatrixMap;
             vfull(this.inputSourceIndex,:) = dataTransition;
             wid = cell(1,numUniqueElements);
             for i = 1:numUniqueElements
@@ -555,7 +582,7 @@ classdef nestedBisectionAnalysis < handle
             f = I./C;
             
             offset = length(this.sources);
-            totalNumNodes = this.synchronizerCCT.nodeNum;
+            totalNumNodes = this.circuit.nodeNum;
             numStates = totalNumNodes - offset;
             alphaSource = this.inputSourceIndex;
             
@@ -573,7 +600,7 @@ classdef nestedBisectionAnalysis < handle
             
             numDevices = length(widN) + length(widP);
             offset = length(this.sources);
-            totalNumNodes = this.synchronizerCCT.nodeNum;
+            totalNumNodes = this.circuit.nodeNum;
             numStates = totalNumNodes - offset;
             alphaSource = this.inputSourceIndex;
             
@@ -699,25 +726,6 @@ classdef nestedBisectionAnalysis < handle
         gammaDot = reshape(gammaDot,[],1);
         
     end
-    
-        function packageTestbenchOptions(this,tbOptions)
-            if(isstruct(tbOptions{1}))
-                this.tbOptions = tbOptions{1};
-            else
-                paramNum = length(tbOptions);
-                if(~(mod(paramNum,2) == 0))
-                    error('Simulation Options have (key,value) pair mismatch');
-                end
-                for i = 1:(paramNum/2)
-                    index = 2*i-1;
-                    key = tbOptions{index};
-                    value = tbOptions{index+1};
-                    options.(key) = value;
-                end
-                this.tbOptions = options;
-            end
-            
-        end
         
         
         function [VmSpl_t,time,teola] = splineBisection(this,bisectionData,tCrit,uVcrit)
@@ -767,17 +775,20 @@ classdef nestedBisectionAnalysis < handle
                 end
             end
             
-            figure
-            hold on
+
             
             VH = VallEnd(:,1+(indH-1)*numNodesPerCCT:indH*numNodesPerCCT);
             VL = VallEnd(:,1+(indL-1)*numNodesPerCCT:indL*numNodesPerCCT);
             
-            plot(tEnd,VH(:,output),'r')
-            plot(tEnd,VL(:,output),'b')
-            plot(tEnd(1),VhCritH(output),'rx')
-            plot(tEnd(1),VlCritL(output),'bx')
-            plot(tCrit*ones(1,100),linspace(0,1),'--')
+            if(this.tbOptions.debug)
+                figure
+                hold on
+                plot(tEnd,VH(:,output),'r')
+                plot(tEnd,VL(:,output),'b')
+                plot(tEnd(1),VhCritH(output),'rx')
+                plot(tEnd(1),VlCritL(output),'bx')
+                plot(tCrit*ones(1,100),linspace(0,1),'--')
+            end
             
             vh = pchip(tEnd,VH(:,output));
             vl = pchip(tEnd,VL(:,output));
@@ -812,8 +823,10 @@ classdef nestedBisectionAnalysis < handle
             VHprev = VallPrev(:,1+(indexPrev(2)-1)*numNodesPerCCT:indexPrev(2)*numNodesPerCCT);
             VLprev = VallPrev(:,1+(indexPrev(1)-1)*numNodesPerCCT:indexPrev(1)*numNodesPerCCT);
             
-            plot(tPrev,VHprev(:,output),'-.r')
-            plot(tPrev,VLprev(:,output),'-.b')
+            if(this.tbOptions.debug)
+                plot(tPrev,VHprev(:,output),'-.r')
+                plot(tPrev,VLprev(:,output),'-.b')
+            end
             
             Vh = pchip(tPrev,VHprev');
             Vl = pchip(tPrev,VLprev');
@@ -825,13 +838,17 @@ classdef nestedBisectionAnalysis < handle
               vH_interpNew = vH_interpNew(output);
               vL_interpNew = vL_interpNew(output);
               VhCritH      = VhCritH(output);
-            
-            plot(tEnd(1) - delta_tH,vH_interpNew,'rs',tEnd(1) - delta_tH,vL_interpNew,'bs')
-            
+              
+             if(this.tbOptions.debug)
+                 plot(tEnd(1) - delta_tH,vH_interpNew,'rs',tEnd(1) - delta_tH,vL_interpNew,'bs')\
+             end
+              
             alphaH = (vH_interpNew - vL_interpNew)'*(VhCritH-vL_interpNew)/((vH_interpNew - vL_interpNew)'*(vH_interpNew - vL_interpNew));
             pH =  (alphaH*vH_interpNew + (1-alphaH)*vL_interpNew);
             
-            plot(tEnd(1)-delta_tH,pH,'ro')
+            if(this.tbOptions.debug)
+                plot(tEnd(1)-delta_tH,pH,'ro')
+            end
             
             vH_interpNew = ppval(Vh,tEnd(1) - delta_tL);
             vL_interpNew = ppval(Vl,tEnd(1) - delta_tL);
@@ -854,89 +871,15 @@ classdef nestedBisectionAnalysis < handle
             
             metaStart = (alphaH + alphaL)/2*vHEndPrev + (1-(alphaH + alphaL)/2)*vLEndPrev;
             
-            plot(tPrev(1),newVHStart(output),'ro')
-            plot(tPrev(1),newVLStart(output),'bo')
-            plot(tPrev(1),vHEndPrev(output),'r^')
-            plot(tPrev(1),vLEndPrev(output),'b^')
-            plot(tPrev(1),metaStart(output),'xm')
+            if(this.tbOptions.debug)
+                plot(tPrev(1),newVHStart(output),'ro')
+                plot(tPrev(1),newVLStart(output),'bo')
+                plot(tPrev(1),vHEndPrev(output),'r^')
+                plot(tPrev(1),vLEndPrev(output),'b^')
+                plot(tPrev(1),metaStart(output),'xm')
+            end
             
             teola = tPrev(1);
-
-%             for i = 1:numParallelCCTs-1
-%                 ViQ = VallEnd(ind,output+(i-1)*numNodesPerCCT);
-%                 ViQEnd = VallEnd(end,output+ (i-1)*numNodesPerCCT);
-%                 
-%                 if( (ViQ < failHigh) && (ViQEnd > failHigh))
-%                     if(ViQ > vHind)
-%                         vHind = ViQ;
-%                         for j = 1:numParallelCCTs
-%                             Vh = VallEnd(ind,output+(j-1)*numNodesPerCCT);
-%                             if(Vh > failHigh)
-%                                 indH = [i,j];
-%                                 break;
-%                             end
-%                         end
-%                     end
-%                 end
-%                 
-%                 if( (ViQ > failLow) && (ViQEnd < failLow))
-%                     if(ViQ <vLind)
-%                         vLind = ViQ;
-%                         for j = 1:numParallelCCTs
-%                             Vl = VallEnd(ind,output+(j-1)*numNodesPerCCT);
-%                             if(Vl < failLow)
-%                                 indL = [j,i];
-%                                 break;
-%                             end
-%                         end
-%                     end
-%                 end
-%             end
-            
-            %Now that we have those trajectories, we now linearly
-            %interpolate between the set of trajectories to create a
-            %trajectory which just fails to go high and one which just
-            %fails to go low
-            
-%             VhH = pchip(tEnd',VallEnd(:,1+(indH(2)-1)*numNodesPerCCT:indH(2)*numNodesPerCCT)');
-%             VhL = pchip(tEnd',VallEnd(:,1+(indH(1)-1)*numNodesPerCCT:indH(1)*numNodesPerCCT)');
-%             
-%             VlH = pchip(tEnd',VallEnd(:,1+(indL(2)-1)*numNodesPerCCT:indL(2)*numNodesPerCCT)');
-%             VlL = pchip(tEnd',VallEnd(:,1+(indL(1)-1)*numNodesPerCCT:indL(1)*numNodesPerCCT)');
-%             
-%             VhHCrit = ppval(VhH,tCrit);
-%             VhLCrit = ppval(VhL,tCrit);
-%             
-%             VlHCrit = ppval(VlH,tCrit);
-%             VlLCrit = ppval(VlL,tCrit);
-%             
-%             alphaH = (failHigh - VhLCrit(output))./(VhHCrit(output)-VhLCrit(output));
-%             alphaL = (failLow - VlLCrit(output))./(VlHCrit(output) - VlLCrit(output));
-%             
-%             VH = alphaH*VallEnd(:,1+(indH(2)-1)*numNodesPerCCT:indH(2)*numNodesPerCCT)+...
-%                 (1-alphaH)*VallEnd(:,1+(indH(1)-1)*numNodesPerCCT:indH(1)*numNodesPerCCT);
-%             
-%             VL = alphaL*VallEnd(:,1+(indL(2)-1)*numNodesPerCCT:indL(2)*numNodesPerCCT)+...
-%                 (1-alphaL)*VallEnd(:,1+(indL(1)-1)*numNodesPerCCT:indL(1)*numNodesPerCCT);
-            
-            %With the just failing high and just failing low trajectories,
-            %we now compute teola by finding the larger time
-            %uVcrit*VH - uVcrit*VL <= deltaV
-            
-            
-%             uVHteola = @(t) ppval(uVH,t) - deltaV;
-%             uVLteola = @(t) ppval(uVL,t) + deltaV;
-%             
-%             
-%             
-%             teolaH = fzero(uVHteola,tEnd(start));
-%             teolaL = fzero(uVLteola,tEnd(start));
-%             
-%             teola = max(teolaH,teolaL);
-            
-%             uV = @(t) ppval(uVH,t) - ppval(uVL,t) - deltaV;
-%             
-%             teola = fzero(uV,tEnd(start));
             
             %With teola established, lets now spline the perfectly
             %metastable trajectory starting with the before last nested
@@ -969,16 +912,7 @@ classdef nestedBisectionAnalysis < handle
             vH = cell(1,length(bisectionData));
             vL = cell(1,length(bisectionData));
             timeFull = cell(1,length(bisectionData));
-            
-            %spline the before last trajectory to compute the starting
-            %interpolatant alphaH and alphaL
-            
-%             VHlastInterp = pchip(tEnd2,VHlast);
-%             VLlastInterp = pchip(tEnd2,VLlast);
-%             
-%             alphaH = norm(ppval(VHchip,teola) - ppval(VLlastInterp,teola))/norm(ppval(VHlastInterp,teola)-ppval(VLlastInterp,teola));
-%             alphaL = norm(ppval(VLchip,teola) - ppval(VLlastInterp,teola))/norm(ppval(VHlastInterp,teola)-ppval(VLlastInterp,teola));
-%             
+              
             %start with the "perfectly metastable trajectory" in the middle
             %between alphaH and alphaL
             alphaM(end) = 0.5*(alphaH+alphaL);
@@ -1052,71 +986,7 @@ classdef nestedBisectionAnalysis < handle
             VlSpl_t = @(t) ppval(VlSpl,t);
             
         end
-        
-        
-        
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        % Functions for coho
-        
-        % This function computes LDI models for input signals specified by Brockett annuli
-        % region: current reachable region (an object of shape class)
-        % states: the current region (1-4) for Brockett annulus of each signal.
-        % vars:   index of interested nodes
-        function [c,err] = dV_ldi(this,region,states,vars,varargin)
-            if(nargin<4||isempty(vars)), vars = 1:this.synchronizerCCT.nodeNum; end
-            vars = reshape(vars,1,[]);
-            [c,err] = this.synchronizerCCT.dV_ldi(region,vars,varargin{:});
-            % Override rather sum for input signals
-            for i=1:length(this.sources)
-                ind = this.map(i);
-                if(any(vars==ind))
-                    ibnds = region.project(ind).rec;
-                    [cc,ee] = this.sources{i}.dV_ldi(ibnds,states(i),varargin{:});
-                    mm = find(vars==ind); % index of vars
-                    c(mm,[ind;end]) = repmat(cc,length(mm),1); err(mm) = repmat(ee,length(mm),1);
-                end
-            end
-        end
-        
-        % The number of dimension of ODE
-        function n = dim(this)
-            n = this.synchronizerCCT.nodeNum;
-        end
-        % The name of the circuit
-        function str = name(this)
-            str = class(this.synchronizerCCT);
-        end
-        % design under test (circuit)
-        function c = dut(this)
-            c = this.synchronizerCCT;
-        end
-        % The number of input signals
-        function n = inputNum(this)
-            n = length(this.sources);
-        end
-        % voltage source of input signals
-        function i = inputs(this,ind)
-            if(nargin<2||isempty(ind))
-                i = this.sources;
-            else
-                i = this.sources{ind};
-            end
-        end
-        
-        % Index of input signals
-        function ind = inputNodes(this)
-            ind = this.map;
-        end
-        % Index of circuit nodes
-        % A wrapper of the circuit.find_port_index functions
-        function inds = find_port_index(this,ports)
-            inds = this.circuit.find_port_index(ports);
-        end
-        
-        function model = getModel(this)
-            model = this.defaultModel;
-        end
-        
+                 
         function vfull = getVfull(this,tSample,dataTransition,state)
             vfull = this.vfull(tSample,dataTransition,state);
         end
@@ -1162,7 +1032,7 @@ classdef nestedBisectionAnalysis < handle
             Idev = cell(1,numUniqueElements);
             Ctot = cell(1,numUniqueElements);
             CapParams = cell(1,numUniqueElements);
-            Ms = this.mapMatrix;
+            Ms = this.syncMatrixMap;
             for i = 1:numUniqueElements
                 %get the circuit element grouping
                 elementGroup = synchronizerCCTMapping{i};
@@ -1272,7 +1142,7 @@ classdef nestedBisectionAnalysis < handle
             Ih_tot = cell(1,numUniqueElements);
             dIdxDev_Tot = cell(1,numUniqueElements);
             Cdev_Tot = cell(1,numUniqueElements);
-            Ms   = this.mapMatrix;
+            Ms   = this.syncMatrixMap;
             %to do so we change the default model to use the AD version of the
             %model
             if(strcmp(this.tbOptions.capModel,'full'))
@@ -1438,36 +1308,10 @@ classdef nestedBisectionAnalysis < handle
                 
                 Jac = Cap\(dCdx + dIdx);
             end
-        end
-        
-    function maps = computeMapMatrix(this)
-        
-        devMaps = this.synchronizerCCTMap;
-        maps = cell(1,length(devMaps));
-        maxNodeNum = 0;
-        for i = 1:length(devMaps)
-            m = reshape(devMaps{i}{2},1,[]);
-            if(max(m) > maxNodeNum)
-                maxNodeNum = max(m);
-            end
-        end
-        
-        for i = 1:length(devMaps)
-            m = reshape(devMaps{i}{2},1,[]);
-            m = m';
-            Mdev = sparse(m,1:size(m),ones(size(m)));
-            [x,~] = size(Mdev);
-            % this is a hacky solution which is not fast, BUT this mapping
-            % only gets computed once
-            if(x < maxNodeNum)
-                Mdev(maxNodeNum,:) = 0;
-            end
-            maps{i} = Mdev;
-        end
-    end
+        end        
         
         function Mdev = computeMapMatrixDevice(this,in,out)
-            Mtotal = [this.mapMatrix{:}];
+            Mtotal = [this.syncMatrixMap{:}];
             devMaps = this.synchronizerCCTMap;
             maps = cell(1,length(devMaps));
             for i = 1:length(devMaps)
@@ -1490,7 +1334,7 @@ classdef nestedBisectionAnalysis < handle
         end
         
         function Mdev = computeMapMatrixDeviceTx(this,in,out,type)
-            Mtotal = [this.mapMatrix{:}];
+            Mtotal = [this.syncMatrixMap{:}];
             devMaps = this.synchronizerCCTMap;
             maps = cell(1,length(devMaps));
             for i = 1:length(devMaps)
@@ -1530,7 +1374,7 @@ classdef nestedBisectionAnalysis < handle
             vs = this.eval_vs(t);%./this.tbOptions.capScale);
             % assign voltage source
             iss = this.is_src;
-            vfull = zeros(this.synchronizerCCT.nodeNum,v_odeShape(2)); %the full vector for one circuit
+            vfull = zeros(this.circuit.nodeNum,v_odeShape(2)); %the full vector for one circuit
             vfull(this.map,:) = vs; % fill in voltage sources map to circuit port
             %vfull = repmat(vfull,this.tbOptions.numParallelCCTs,1);   %get num parallel cct copies
             %vfull = reshape(vfull,[],this.tbOptions.numParallelCCTs);
@@ -1563,82 +1407,7 @@ classdef nestedBisectionAnalysis < handle
             vfull(this.inputSourceIndex,:) = this.inputSource.V(t,dataTransition);
             
         end
-        % compute voltage for circuit inputs
-        % vs: each column for a time
-        function vs = eval_vs(this,t)
-            vs = zeros(length(this.sources),length(t));
-            for i=1:length(this.sources)
-                vs(i,:) = this.sources{i}.V(t);
-            end
-        end
-        % index of source nodes
-        function iss = is_src(this)
-            n = this.synchronizerCCT.nodeNum;
-            iss = false(n,1);
-            iss(this.map) = true;
-        end
         
-        function setInterval(this,newInterval)
-            this.dinInterval = newInterval;
-        end
-             
-        function dwdt = dwdt_ode(~,jac,w_ode)
-            dwdt = -w_ode'*jac;
-            dwdt = dwdt';
-        end
-           
-        
-        function clockEdgeTimes = findClockEdges(this,t)
-            
-            clkEdgeOptions = this.tbOptions.clockEdgeSettings;
-            
-            %produce a clock trace and find where the clock edge crosses
-            %between 'low' percentage and 'high' percentage of vdd.
-            clk = this.clockSource.V(t);
-            edgeIndex = clk > this.tbOptions.vdd*clkEdgeOptions.low...
-                & clk < this.tbOptions.vdd*clkEdgeOptions.high;
-            
-            edges = t(edgeIndex);
-            [~,iter] = size(edges);
-            %this is to ensure that the last edge is captured.
-            if(mod(iter,2)==0)
-                iter = iter+1;
-                edges(iter)= 0;
-            end
-            
-            edgeNum = 1;
-            counter = 1;
-            timeSum = 0;
-            
-            clockEdgeTimes = zeros(1,clkEdgeOptions.numberOfEdges);
-            
-            for i = 1:(iter-1)
-                %if the differences between the edges is less than clkEdgeSpread apart
-                %then increase the timeSum and counter otherwise they belong to
-                %a new edge
-                if(abs(edges(i)-edges(i+1)) < clkEdgeOptions.clkEdgeSpread)
-                    timeSum = edges(i) + timeSum;
-                    counter = counter + 1;
-                else
-                    clockEdgeTimes(edgeNum) = (timeSum + edges(i))/counter;
-                    %if the number of edges requested is met, exit. Otherwise
-                    %reset the counter and timeSum
-                    if(edgeNum > clkEdgeOptions.numberOfEdges)
-                        break;
-                    end
-                    edgeNum = edgeNum + 1;
-                    counter = 1;
-                    timeSum = 0;
-                end
-            end
-        end
-        
-        function [g,dgdt,lambda] = gainSync(~,wNorm,jac,beta,dhda)
-            lambda = wNorm'*jac*wNorm;
-            g = wNorm'*beta;
-            dgdt = wNorm'*dhda+lambda*g;
-            
-        end
         
         function [value,isterminal,direction] = betaRenorm(this,t,beta)
             betaOptions = this.tbOptions.betaSimOptions;
