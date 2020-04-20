@@ -13,7 +13,7 @@
 %
 % constructor
 %   nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-%                   clockSource,nodeMask,uVcrit,modelDictionary,...
+%                   clockSource,nodeMask,uVcrit,...
 %                   defaultModel,defaultModelProcess,varargin)
 %       synchronizerCCT: The synchronizer circuit definition
 %       ports:          a cell of "node" objects corresponding to source
@@ -323,7 +323,7 @@ classdef nestedBisection < testbench
         %                                  rising edges.
         
         function this = nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-                clockSource,nodeMask,modelDictionary,defaultModel,defaultModelProcess,varargin)
+                clockSource,nodeMask,defaultModel,defaultModelProcess,varargin)
             tbOptions = [];
             if(nargin<1), error('not enough parameters'); end
             if(nargin<2), ports = {}; end
@@ -357,7 +357,7 @@ classdef nestedBisection < testbench
                 tbOptions = varargin;
             end
             
-            this = this@testbench(synchronizerCCT,ports,sources,modelDictionary,defaultModel,defaultModelProcess,tbOptions);
+            this = this@testbench(synchronizerCCT,ports,sources,defaultModel,defaultModelProcess,tbOptions);
             tbOptions = this.getTestbenchOptions;
             tbOptions.integratorOptions.Events = @this.stopCriteria;
             

@@ -13,7 +13,7 @@
 %
 % constructor
 %   nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-%                   clockSource,nodeMask,uVcrit,modelDictionary,...
+%                   clockSource,nodeMask,uVcrit,...
 %                   defaultModel,defaultModelProcess,varargin) 
 %       synchronizerCCT: The synchronizer circuit definition
 %       ports:          a cell of "node" objects corresponding to source
@@ -176,7 +176,7 @@ classdef nestedBisectionAnalysis < testbench
         %                                  rising edges.
         
         function this = nestedBisectionAnalysis(synchronizerCCT,ports,sources,dinSource,clockSource,metaResolutionNode,...
-                modelDictionary,defaultModel,defaultModelProcess,varargin)
+                defaultModel,defaultModelProcess,varargin)
             tbOptions = [];
             if(nargin<1), error('not enough parameters'); end
             if(nargin<2), ports = {}; end
@@ -216,7 +216,7 @@ classdef nestedBisectionAnalysis < testbench
                 tbOptions = varargin;
             end
             
-            this = this@testbench(synchronizerCCT,ports,sources,modelDictionary,defaultModel,defaultModelProcess,tbOptions);
+            this = this@testbench(synchronizerCCT,ports,sources,defaultModel,defaultModelProcess,tbOptions);
             
             this.defaultModelAD = modelDictionary.getModel(strcat(defaultModel,' AD'),defaultModelProcess,this.tbOptions);
             

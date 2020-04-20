@@ -6,7 +6,6 @@ clkbar = vtanhClock('clkbar',1e10,pi/2,0.5,0.5,4,3e-10,1,1);
 
 din = vtanhDelay('din',0.5,0.5,5e10,true);
 
-myDict = modelDictionary;
 transistorNumbering = 1:1:42;
 nDevices = odd(transistorNumbering);
 pDevices = even(transistorNumbering);
@@ -32,10 +31,10 @@ tCrit = 1.2e-9;
 kickData = struct('kickTime',9e-10,'kickPercentage',0.25,'kickNodes',[10,11]);
 
 nbKick = nestedBisectionKick(synch,{synch.vdd,synch.gnd,synch.clk,synch.clkbar,synch.d},...
-    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{synch.d,din},clk,mask,myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{synch.d,din},clk,mask,'EKV','PTM 45nmHP');
 
 nbAnalysis = nestedBisectionAnalysis(synch,{synch.vdd,synch.gnd,synch.clk,synch.clkbar,synch.d},...
-    {vdd,gnd,clk,clkbar,vdd},{synch.d,din},clk,synch.cctPath.PGFF_1.PGL_0.q,myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},{synch.d,din},clk,synch.cctPath.PGFF_1.PGL_0.q,'EKV','PTM 45nmHP');
 
 
 kickRuns = nbKick.simulate('2flopSyncKickEKV',span,tCrit,kickData);

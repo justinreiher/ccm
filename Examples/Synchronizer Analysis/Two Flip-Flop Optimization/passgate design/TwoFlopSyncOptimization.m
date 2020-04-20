@@ -15,8 +15,6 @@ mask = [synch.cctPath.PGFF_0.PGL_0.q,...
         synch.cctPath.PGFF_0.q,...
         synch.cctPath.PGFF_1.PGL_0.q,...
         synch.cctPath.q];
-    
-myDict = modelDictionary;
 
 numTx = 42;
 numTxRobust = 78;
@@ -64,12 +62,12 @@ while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx*tol)
     sync = TWO_FLOP_PG_SYNC('pgSync_test',transistorWidths,1);
     
     nb = nestedBisection(sync,{sync.vdd,sync.gnd,sync.clk,sync.clkbar,sync.d},...
-        {vdd,gnd,clk,clkbar,vdd},[5.5e-10 3e-10],{sync.d,din},clk,mask,myDict,'EKV','PTM 45nmHP');
+        {vdd,gnd,clk,clkbar,vdd},[5.5e-10 3e-10],{sync.d,din},clk,mask,'EKV','PTM 45nmHP');
     
     dataSync = nb.simulate(strcat('twoFlopSynch_iter',num2str(i)),timeSpan,tCrit);
     
     nbAnalysis = nestedBisectionAnalysis(sync,{sync.vdd,sync.gnd,sync.clk,sync.clkbar,sync.d},...
-        {vdd,gnd,clk,clkbar,vdd},{sync.d,din},clk,mask(end-1),myDict,'EKV','PTM 45nmHP');
+        {vdd,gnd,clk,clkbar,vdd},{sync.d,din},clk,mask(end-1),'EKV','PTM 45nmHP');
     
     nbAnalysis.bisectionAnalysis(strcat('twoFlopSynchAnalysis_',num2str(i)),dataSync,uVcrit,tCrit);
     

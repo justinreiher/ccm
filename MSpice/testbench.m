@@ -15,15 +15,14 @@
 %                    simVoltage points.
 %
 % constructor
-%   testbench(circuit,ports,sources,modelDictionary,defaultModel,...
+%   testbench(circuit,ports,sources,defaultModel,...
 %             defaultModelProcess,testbenchOptions); 
 %     circuit: an object of "circuit" class.
 %     ports:    an cell of "node" objects
 %     sources: an cell of "circuit" objects which must implement the V(t) function. 
 %          the size of ports and sources must be the same. 
 %          the voltage source is applied to the corresponding port
-%     modelDictionary: a model dictionary object which provides an
-%     interface into the implementation details for circuit simulation
+%     
 %     optional inputs:
 %       defaultModel: The global default model to use for simulation
 %       defaultModelProcess: The global transistor process used in
@@ -174,14 +173,13 @@ classdef testbench < handle
       % such that it works for the original default 180nm process which ran
       % at 1.8V. The other default is that all capacitances go to ground.
     function this = testbench(circuit,ports,sources,...
-            modelDictionary,defaultModel,defaultModelProcess,varargin)
+            defaultModel,defaultModelProcess,varargin)
        tbOptions = [];
       if(nargin<1), error('not enough parameters'); end
       if(nargin<2), ports = {}; end
       if(nargin<3), sources = {}; end
-      if(nargin<4), error('a model dictionary is required'); end
-      if(nargin<5), defaultModel = 'interp'; defaultModelProcess = 'PTM 180nm'; end
-      if(nargin<7), tbOptions = struct('capModel','gnd','capScale',1,'vdd',1.8,'temp',298,'numParallelCCTs',1,'debug',false); end
+      if(nargin<4), defaultModel = 'interp'; defaultModelProcess = 'PTM 180nm'; end
+      if(nargin<5), tbOptions = struct('capModel','gnd','capScale',1,'vdd',1.8,'temp',298,'numParallelCCTs',1,'debug',false); end
       if(length(ports)~=length(sources))
         error('incorrect size of sources and ports');
       end

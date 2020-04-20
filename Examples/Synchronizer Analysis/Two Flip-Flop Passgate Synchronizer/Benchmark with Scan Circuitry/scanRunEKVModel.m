@@ -6,8 +6,6 @@ clkbar = vtanhClock('clkbar',1e10,pi/2,0.5,0.5,4,3e-10,1,1);
 
 din = vtanhDelay('din',0.5,0.5,5e10,true);
 
-myDict = modelDictionary;
-
 transistorWidthsScan = ones(50,1)*450e-7;
 
 syncScan = TWO_FLOP_PG_SYNC_SCAN('syncScan',transistorWidthsScan,1);
@@ -30,12 +28,12 @@ tCrit = 1.2e-9;
 
 
 nbScan = nestedBisection(syncScan,{syncScan.vdd,syncScan.gnd,syncScan.clk,syncScan.clkbar,syncScan.d},...
-    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{syncScan.d,din},clk,maskScan,myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{syncScan.d,din},clk,maskScan,'EKV','PTM 45nmHP');
 
 
 nbAnalysisScan = nestedBisectionAnalysis(syncScan,{syncScan.vdd,syncScan.gnd,syncScan.clk,syncScan.clkbar,syncScan.d},...
     {vdd,gnd,clk,clkbar,vdd},{syncScan.d,din},clk,synchScan.cctPath.PGFF_1.PGL_0.q,...
-    myDict,'EKV','PTM 45nmHP');
+    'EKV','PTM 45nmHP');
 
 
 benchScanRuns = nbScan.simulate('2flopSyncEKVScan',span,tCrit);

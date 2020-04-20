@@ -2,7 +2,7 @@
 %
 % constructor
 %   nestedBisectionKick(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-%                   clockSource,nodeMask,uVcrit,modelDictionary,...
+%                   clockSource,nodeMask,uVcrit,...
 %                   defaultModel,defaultModelProcess,varargin) 
 %       synchronizerCCT: The synchronizer circuit definition
 %       ports:          a cell of "node" objects corresponding to source
@@ -129,10 +129,10 @@ classdef nestedBisectionKick < nestedBisection
       %                                  rising edges.
       
     function this = nestedBisectionKick(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-            clockSource,nodeMask,modelDictionary,defaultModel,defaultModelProcess,varargin)
+            clockSource,nodeMask,defaultModel,defaultModelProcess,varargin)
       
       this = this@nestedBisection(synchronizerCCT,ports,sources,dinInterval,dinSource,...
-            clockSource,nodeMask,modelDictionary,defaultModel,defaultModelProcess,varargin);
+            clockSource,nodeMask,defaultModel,defaultModelProcess,varargin);
             
     end
 

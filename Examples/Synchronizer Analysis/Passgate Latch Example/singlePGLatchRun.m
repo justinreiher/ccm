@@ -6,7 +6,6 @@ clkbar = vtanhClock('clkbar',1e10,pi/2,0.5,0.5,4,3e-10,1,1);
 
 din = vtanhDelay('din',0.5,0.5,5e10,true);
 
-myDict = modelDictionary;
 transistorNumbering = 1:1:12;
 nDevices = odd(transistorNumbering);
 pDevices = even(transistorNumbering);
@@ -26,10 +25,10 @@ span = [0 7e-10];
 tCrit = 6.5e-10;
 
 nbPGLatch = nestedBisection(pg,{pg.vdd,pg.gnd,pg.clk,pg.clkbar,pg.d},...
-    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{pg.d,din},clk,mask,myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},[5.5e-10 4e-10],{pg.d,din},clk,mask,'EKV','PTM 45nmHP');
 
 nbPGLAnalysis = nestedBisectionAnalysis(pg,{pg.vdd,pg.gnd,pg.clk,pg.clkbar,pg.d},...
-    {vdd,gnd,clk,clkbar,vdd},{pg.d,din},clk,mask(end),myDict,'EKV','PTM 45nmHP');
+    {vdd,gnd,clk,clkbar,vdd},{pg.d,din},clk,mask(end),'EKV','PTM 45nmHP');
 
 
 benchRuns = nbPGLatch.simulate('pgLatchEKV',span,tCrit);
