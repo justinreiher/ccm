@@ -96,11 +96,7 @@
 %               time tin for t in [0,tCrit].
 %       dataTransition: The time at which tin effectively occurs.
 %       beta_t: A splined object which can compute the synchronizer's gain
-%               beta(t) for t in [0,tCrit].
-%       timeSpan:   The time span on which to integrate over.
-%       uVcrit:  A vector which determines the quantity of importance in
-%                metastability resolution at tCrit. Provided by the user.
-%                This vector is automatically normalized. 
+%               beta(t) for t in
 %   
 %   It also provides function for verification (only if voltage sources support verification interface)
 %   [c,err] = dV_ldi(region,states): LDI model for the whole system
@@ -353,7 +349,7 @@ classdef nestedBisectionAnalysis < testbench
             
             iter = length(t);
             scale = this.tbOptions.capScale;
-            Jac = zeros([numStates^2,iter]);
+            jac = zeros([numStates^2,iter]);
             dIdx_Dev = zeros([numDev*totalNumStates,iter]);
             C_Dev = zeros([numDev*totalNumStates,iter]);
             vdot = zeros([numStates,iter]);
@@ -363,25 +359,25 @@ classdef nestedBisectionAnalysis < testbench
             for i = 1:iter
                 vSample = splMeta(t(i));
                 [J,dhda(:,i),vdot(:,i),dIdxDev,CDev] = this.computeJacVdot(t(i),dataTransition,vSample);
-                Jac(:,i) = reshape(J,[numStates^2,1]);
+                jac(:,i) = reshape(J,[numStates^2,1]);
                 dIdx_Dev(:,i) = reshape(dIdxDev,[numDev*totalNumStates,1]);
                 C_Dev(:,i) = reshape(CDev,[numDev*totalNumStates,1]);
             end
             toc()
             
             if(this.tbOptions.debug)
-                save(strcat(filename,'_jacAll.mat'),'Jac','dhda','vdot','dIdx_Dev','C_Dev');
+                save(strcat(filename,'_jacAll.mat'),'jac','dhda','vdot','dIdx_Dev','C_Dev');
             end
 
             
-            jacP = pchip(t,Jac);
+            jacP = pchip(t,jac);
             dIdxP = pchip(t,dIdx_Dev);
             CdevP   = pchip(t,C_Dev);
             
             
  %           dIdxDev_t = @(t) reshape(ppval(dIdxP,t),[numDev,totalNumStates]);
  %           Cdev_t    = @(t) reshape(ppval(CdevP,t),[numDev,totalNumStates]);
-            Jac_t = @(t) reshape(ppval(jacP,t),[numStates,numStates]);
+            jac_t = @(t) reshape(ppval(jacP,t),[numStates,numStates]);
             
             dhdaP = pchip(t,dhda);
             dhda_t = @(t) ppval(dhdaP,t);
@@ -391,7 +387,7 @@ classdef nestedBisectionAnalysis < testbench
             
             fprintf('starting computation for beta(t)...\n')
             tic()
-            [tb, beta_ode] = integrator(@(tb, beta_ode)(this.dbeta_ode(Jac_t(tb),dhda_t(tb),beta_ode)), [startTime stopTime], beta0, optsBeta);
+            [tb, beta_ode] = integrator(@(tb, beta_ode)(this.dbeta_ode(jac_t(tb),dhda_t(tb),beta_ode)), [startTime stopTime], beta0, optsBeta);
             beta_ode = beta_ode';
             
             beta = spline(tb,beta_ode);
@@ -400,7 +396,7 @@ classdef nestedBisectionAnalysis < testbench
             
             fprintf('starting computation for w(t) = ||uVcrit*S(t)||...\n');
             tic()
-            [tw,w_ode] = integrator(@(tw,w_ode)(this.dwdt_ode(Jac_t(tw),w_ode)), [stopTime startTime],uVcrit,opts);
+            [tw,w_ode] = integrator(@(tw,w_ode)(this.dwdt_ode(jac_t(tw),w_ode)), [stopTime startTime],uVcrit,opts);
             toc()
             w = w_ode';
             [~,iter] = size(w);
@@ -420,7 +416,7 @@ classdef nestedBisectionAnalysis < testbench
             tic()
             for i = 1:iter
                 t_sample = t(i);
-                [g,dgdt,lambda(i)] = this.gainSync(wNorm_t(t_sample),Jac_t(t_sample),...
+                [g,dgdt,lambda(i)] = this.gainSync(wNorm_t(t_sample),jac_t(t_sample),...
                     beta_t(t_sample),dhda_t(t_sample));
             end
             toc()
@@ -435,15 +431,15 @@ classdef nestedBisectionAnalysis < testbench
         end
         
         % This function computes the time derivative of u(t)
-        function dwdt = dwdt_ode(~,Jac,w_ode)
-            dwdt = -w_ode'*Jac;
+        function dwdt = dwdt_ode(~,jac,w_ode)
+            dwdt = -w_ode'*jac;
             dwdt = dwdt';
         end
         
         % This function computes the synchronizer gain and instantaneous
         % gain
-        function [g,dgdt,lambda] = gainSync(~,wNorm,Jac,beta,dhda)
-            lambda = wNorm'*Jac*wNorm;
+        function [g,dgdt,lambda] = gainSync(~,wNorm,jac,beta,dhda)
+            lambda = wNorm'*jac*wNorm;
             g = wNorm'*beta;
             dgdt = wNorm'*dhda+lambda*g;
             
@@ -453,7 +449,7 @@ classdef nestedBisectionAnalysis < testbench
         % respect to the transistor widths at the critical time tCrit.
         %
         %   TODO: create a Backward AD version of this function call
-        function [dGdw_tCrit,gamma,t] = dGdw(this,traj_t,Jac_t,dhda_t,dataTransition,beta_t,timeSpan,uVcrit)
+        function [dGdw_tCrit,gamma,t] = dGdw(this,traj_t,jac_t,dhda_t,dataTransition,beta_t,timeSpan,uVcrit)
             
             if(length(uVcrit) == this.circuit.nodeNum)
                 iss = this.is_src;
@@ -478,7 +474,7 @@ classdef nestedBisectionAnalysis < testbench
             gamma0 = zeros(numStates,numAD_var);
             fprintf('Starting computation of dG/dw...\n') 
             tic()
-            [t,gamma] = ode45(@(t,gamma) this.gamma_ode(t,traj_t(t),Jac_t(t),dhda_t(t),beta_t(t),gamma,dataTransition),timeSpan,gamma0);
+            [t,gamma] = ode45(@(t,gamma) this.gamma_ode(t,traj_t(t),jac_t(t),dhda_t(t),beta_t(t),gamma,dataTransition),timeSpan,gamma0);
             dGdw_tCrit = expandW((uVcrit*reshape(gamma(end,:),numStates,numAD_var))');
             toc()
         end
@@ -486,7 +482,7 @@ classdef nestedBisectionAnalysis < testbench
         % Computes the time derivative of Gamma which is the time
         % derivative of the partial derivative of beta with respect to the
         % transistor widths of the synchronizer design
-        function gammaDot = gamma_ode(this,t,traj,Jac,dhda,beta,gamma,dataTransition)
+        function gammaDot = gamma_ode(this,t,traj,jac,dhda,beta,gamma,dataTransition)
             
             vfull = this.vfull(t,dataTransition,traj);
             synchronizerCCTMapping = this.synchronizerCCTMap;
@@ -744,9 +740,33 @@ classdef nestedBisectionAnalysis < testbench
             
             nonHomogeneous = Cap\(dJdw_Beta + dfdwda);
             
+            
+%             
+%             df_dwda = zeros(numStates,numDevices);
+%             betaJac_fw = zeros(numStates,numDevices);
+%             dCdxf = zeros(numStates,numStates);
+% 
+%             for i = 1:numStates
+%                 
+%                 row_Ihx = I(i).hx;
+%                 d2Idwdx = row_Ihx(offset+1:totalNumNodes,totalNumNodes+1:end);
+%                 dC_i = dC(:,i+offset);
+%                 dCdw_i = dC_i(:,totalNumNodes+1:end);
+%                 dCdwJ_i = (dCdw_i'*jac)';
+%                 betaJac_fw(i,:) = beta'*(-dCdwJ_i + d2Idwdx);
+%                 
+%                 row_Ihx = I(i).hx;
+%                 
+%                 dCdwDhda_i = -dhda'*dCdw_i;
+%                 d2Idwda_i = row_Ihx(totalNumNodes+1:end,alphaSource)';
+%                 
+%                 df_dwda(i,:) = dCdwDhda_i + d2Idwda_i;
+%             end
+% 
+%             nonHomogeneous = Cap\(betaJac_fw + df_dwda);
         end
         
-        gammaDot = Jac*gamma + nonHomogeneous;
+        gammaDot = jac*gamma + nonHomogeneous;
         gammaDot = reshape(gammaDot,[],1);
         
     end
