@@ -188,7 +188,7 @@ classdef testbench < handle
           tbOptions = this.packageTestbenchOptions(varargin);
       end
       this.modelDictionary = modelDictionary;
-      this.defaultModel = modelDictionary.getModel(defaultModel,defaultModelProcess,tbOptions);
+      this.defaultModel = this.modelDictionary.getModel(defaultModel,defaultModelProcess,tbOptions);
       tbOptions.numNodes = circuit.nodeNum;
       tbOptions.numStates = circuit.nodeNum - length(sources);
       this.tbOptions = tbOptions;

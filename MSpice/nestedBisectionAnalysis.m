@@ -183,9 +183,8 @@ classdef nestedBisectionAnalysis < testbench
             if(nargin<3), sources = {}; end
             if(nargin<4), error('the input data source is required in the form {synchronizer.din,dinSource}');end
             if(nargin<5), error('the clock source needs to be provided');end
-            if(nargin<6), error('the synchronizer output port needs to be provided');end
-            if(nargin<7), error('a model dictionary is required'); end
-            if(nargin<9), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
+            if(nargin<6), error('the synchronizer metastability resolution node needs to be provided');end
+            if(nargin<8), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
             if(nargin<10)
                 integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-8,...
                     'InitialStep',0.5e-12);
@@ -218,7 +217,7 @@ classdef nestedBisectionAnalysis < testbench
             
             this = this@testbench(synchronizerCCT,ports,sources,defaultModel,defaultModelProcess,tbOptions);
             
-            this.defaultModelAD = modelDictionary.getModel(strcat(defaultModel,' AD'),defaultModelProcess,this.tbOptions);
+            this.defaultModelAD = this.modelDictionary.getModel(strcat(defaultModel,' AD'),defaultModelProcess,this.tbOptions);
             
             this.inputSource = dinSource{2};
            
@@ -840,7 +839,7 @@ classdef nestedBisectionAnalysis < testbench
               VhCritH      = VhCritH(output);
               
              if(this.tbOptions.debug)
-                 plot(tEnd(1) - delta_tH,vH_interpNew,'rs',tEnd(1) - delta_tH,vL_interpNew,'bs')\
+                 plot(tEnd(1) - delta_tH,vH_interpNew,'rs',tEnd(1) - delta_tH,vL_interpNew,'bs')
              end
               
             alphaH = (vH_interpNew - vL_interpNew)'*(VhCritH-vL_interpNew)/((vH_interpNew - vL_interpNew)'*(vH_interpNew - vL_interpNew));

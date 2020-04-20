@@ -329,8 +329,8 @@ classdef nestedBisection < testbench
             if(nargin<2), ports = {}; end
             if(nargin<3), sources = {}; end
             if(nargin<4), error('a model dictionary is required'); end
-            if(nargin<10), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
-            if(nargin<11)
+            if(nargin<9), defaultModel = 'MVS'; defaultModelProcess = 'PTM 45nmHP'; end
+            if(nargin<10)
                 integratorOptions = odeset('RelTol',1e-6,'AbsTol',1e-6);
                 
                 %%%%%% the following default options are for nested bisection of

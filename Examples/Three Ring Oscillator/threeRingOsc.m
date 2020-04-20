@@ -10,16 +10,16 @@ Vo2 = oscData(:,4);
 Vo1 = oscData(:,6);
 
 ringOsc = THREE_RING_OSC('osc',450e-7,1);
-myDict = modelDictionary;
+
 tbOptionsFull = struct('capModel','full','capScale',1,'vdd',1,'temp',298,'numParallelCCTs',1,'debug',false);
 tbOptionsGnd  = struct('capModel','gnd','capScale',1,'vdd',1,'temp',298,'numParallelCCTs',1,'debug',false);
 
 
-tb_ekvFull = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},myDict,'EKV','PTM 45nmHP',tbOptionsFull);
-tb_ekvGnd  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},myDict,'EKV','PTM 45nmHP',tbOptionsGnd);
+tb_ekvFull = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},'EKV','PTM 45nmHP',tbOptionsFull);
+tb_ekvGnd  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},'EKV','PTM 45nmHP',tbOptionsGnd);
 
-tb_mvsFull  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},myDict,'MVS','PTM 45nmHP',tbOptionsFull);
-tb_mvsGnd  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},myDict,'MVS','PTM 45nmHP',tbOptionsGnd);
+tb_mvsFull  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},'MVS','PTM 45nmHP',tbOptionsFull);
+tb_mvsGnd  = testbench(ringOsc,{ringOsc.vdd,ringOsc.gnd},{Vdd,Gnd},'MVS','PTM 45nmHP',tbOptionsGnd);
 
 [tEkvFull,VekvFull] = tb_ekvFull.simulate([0 2e-10],[0,0,0,1,0]);
 [tEkvGnd,VekvGnd]   = tb_ekvGnd.simulate([0 2e-10],[0,0,0,1,0]);
