@@ -240,8 +240,13 @@
 %   Mdev = computeMapMatrixDeviceTx(in,out,type): Function which
 %   returns the sparse matrix which selects all devices of "type" that have
 %   a node connected to "in" and "out".
-%       in
-%   
+%       in: The input node of interest for all devices of the specified
+%           type connected to node "in".
+%       out: The output node of interest for all devices of the specified
+%            type connected to node "out".
+%
+%       type: The device type that is being considered, e.g. 'nmos','pmos'
+%
 
 classdef nestedBisectionAnalysis < testbench
     properties (GetAccess='public', SetAccess='private');
@@ -268,7 +273,7 @@ classdef nestedBisectionAnalysis < testbench
     end
     
     methods
-        % to create a nestedBisection testbench you need to provide:
+        % to create a nestedBisectionAnalysis testbench you need to provide:
         % - synchronizerCCT: a synchronizer circuit description
         % - ports: the external input and output ports to the synchronizer
         % - sources: the sources that are connected to the inputs of the synchronizer
@@ -546,7 +551,7 @@ classdef nestedBisectionAnalysis < testbench
             end
             toc()
             save(strcat(filename,'.mat'),'t','dataTransition','splMeta',...
-                'beta_t','jac_t','dhda_t','wNorm_t','lambda','g','dgdt');
+                'beta_t','Jac_t','dhda_t','wNorm_t','lambda','g','dgdt');
         end % analysis
         
         % This function computes the time derivative of beta

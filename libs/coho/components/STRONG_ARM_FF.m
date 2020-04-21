@@ -55,9 +55,9 @@ classdef STRONG_ARM_FF < circuit
             s = this.add_port(node('s'));
             r = this.add_port(node('r'));
             
-            sarmL = STRONG_ARM_LATCH(strcat(name,' SL'),widStrong,rlen); this.add_element(sarmL);
-            nand0 = NAND2(strcat(name,' NAND0'),widNAND0,rlen); this.add_element(nand0);
-            nand1 = NAND2(strcat(name,' NAND1'),widNAND1,rlen); this.add_element(nand1);
+            sarmL = STRONG_ARM_LATCH('SAL',widStrong,rlen); this.add_element(sarmL);
+            nand0 = NAND2('NAND_0',widNAND0,rlen); this.add_element(nand0);
+            nand1 = NAND2('NAND_1',widNAND1,rlen); this.add_element(nand1);
 
 
             this.connect(this.d,sarmL.d);

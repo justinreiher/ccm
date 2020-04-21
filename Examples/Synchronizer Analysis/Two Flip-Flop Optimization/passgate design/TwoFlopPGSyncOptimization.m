@@ -64,18 +64,18 @@ while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx*tol)
     nb = nestedBisection(sync,{sync.vdd,sync.gnd,sync.clk,sync.clkbar,sync.d},...
         {vdd,gnd,clk,clkbar,vdd},[5.5e-10 3e-10],{sync.d,din},clk,mask,'EKV','PTM 45nmHP');
     
-    dataSync = nb.simulate(strcat('twoFlopSynch_iter',num2str(i)),timeSpan,tCrit);
+    dataSync = nb.simulate(strcat('twoFlop_PG_Sync_iter',num2str(i)),timeSpan,tCrit);
     
     nbAnalysis = nestedBisectionAnalysis(sync,{sync.vdd,sync.gnd,sync.clk,sync.clkbar,sync.d},...
         {vdd,gnd,clk,clkbar,vdd},{sync.d,din},clk,mask(end-1),'EKV','PTM 45nmHP');
     
-    nbAnalysis.bisectionAnalysis(strcat('twoFlopSynchAnalysis_',num2str(i)),dataSync,uVcrit,tCrit);
+    nbAnalysis.bisectionAnalysis(strcat('twoFlop_PG_SyncAnalysis_',num2str(i)),dataSync,uVcrit,tCrit);
     
-    load(strcat('twoFlopSynchAnalysis_',num2str(i),'.mat'))
+    load(strcat('twoFlop_PG_SyncAnalysis_',num2str(i),'.mat'))
     teola = t(end);
     saveTeola(i) = teola;
     fprintf('Current tCrit: %d\n',saveTeola(i));
-    dGdwRaw = nbAnalysis.dGdw(splMeta,jac_t,dhda_t,dataTransition,beta_t,[t(1),teola],uVcrit);
+    dGdwRaw = nbAnalysis.dGdw(splMeta,Jac_t,dhda_t,dataTransition,beta_t,[t(1),teola],uVcrit);
     
     dGdw = zeros(numTx,1);
     dGdw(nDevices) = dGdwRaw(1:length(nDevices));

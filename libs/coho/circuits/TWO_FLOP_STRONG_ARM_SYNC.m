@@ -68,10 +68,10 @@ classdef TWO_FLOP_STRONG_ARM_SYNC < circuit
             this.q = this.add_port(node('q'));
             this.qbar = this.add_port(node('qbar'));
             
-            inv0     = INV4(strcat(name,' inv0'),widInv0,rlenInv0); this.add_element(inv0);
-            inv1     = INV4(strcat(name,' inv1'),widInv1,rlenInv1); this.add_element(inv1);
-            sARM_ffMaster = STRONG_ARM_FF(strcat(name,' sFF_0'),widMaster,rlenMaster); this.add_element(sARM_ffMaster);
-            sARM_ffSlave = STRONG_ARM_FF(strcat(name,' sFF_1'),widSlave,rlenSlave); this.add_element(sARM_ffSlave);
+            inv0     = INV4('bufferDin',widInv0,rlenInv0); this.add_element(inv0);
+            inv1     = INV4('bufferDinBar',widInv1,rlenInv1); this.add_element(inv1);
+            sARM_ffMaster = STRONG_ARM_FF('saFF_0',widMaster,rlenMaster); this.add_element(sARM_ffMaster);
+            sARM_ffSlave = STRONG_ARM_FF('saFF_1',widSlave,rlenSlave); this.add_element(sARM_ffSlave);
 
             
             this.connect(this.d,inv0.i);

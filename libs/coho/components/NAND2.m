@@ -38,10 +38,10 @@ classdef NAND2 < circuit
       this.o   = this.add_port(node('o'));
       x0        = this.add_port(node('x'));
       
-      n1 = nmos(strcat(name, ' txN_1'),'wid',widN1,'rlen',rlen); this.add_element(n1);
-      n2 = nmos(strcat(name, ' txN_2'),'wid',widN2,'rlen',rlen); this.add_element(n2);
-      p1 = pmos(strcat(name, ' txP_1'),'wid',widP1,'rlen',rlen); this.add_element(p1);
-      p2 = pmos(strcat(name, ' txP_2'),'wid',widP2,'rlen',rlen); this.add_element(p2);
+      n1 = nmos('txN_1','wid',widN1,'rlen',rlen); this.add_element(n1);
+      n2 = nmos('txN_2','wid',widN2,'rlen',rlen); this.add_element(n2);
+      p1 = pmos('txP_1','wid',widP1,'rlen',rlen); this.add_element(p1);
+      p2 = pmos('txP_2','wid',widP2,'rlen',rlen); this.add_element(p2);
 
       this.connect(this.vdd,p1.s,p2.s,p1.b,p2.b);
       this.connect(this.gnd,n2.s,n1.b,n2.b);

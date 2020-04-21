@@ -84,21 +84,21 @@ classdef STRONG_ARM_LATCH < circuit
             y = this.add_port(node('y'));
 
             %cross-coupled inverters
-            txN_CCfwd = nmos(strcat(name, ' txN_{CC_{Fwd}}'),'wid',widN_CCfwd,'rlen',1); this.add_element(txN_CCfwd); 
-			txP_CCfwd = pmos(strcat(name, ' txP_{CC_{Fwd}}'),'wid',widP_CCfwd,'rlen',1); this.add_element(txP_CCfwd);
+            txN_CCfwd = nmos('txN_CC_Fwd','wid',widN_CCfwd,'rlen',1); this.add_element(txN_CCfwd); 
+			txP_CCfwd = pmos('txP_CC_Fwd','wid',widP_CCfwd,'rlen',1); this.add_element(txP_CCfwd);
             
-            txN_CCbck = nmos(strcat(name, ' txN_{CC_{Bck}}'),'wid',widN_CCbck,'rlen',1); this.add_element(txN_CCbck);
-            txP_CCbck = pmos(strcat(name, ' txP_{CC_{Bck}}'),'wid',widP_CCbck,'rlen',1); this.add_element(txP_CCbck);
+            txN_CCbck = nmos('txN_CC_Bck','wid',widN_CCbck,'rlen',1); this.add_element(txN_CCbck);
+            txP_CCbck = pmos('txP_CC_Bck','wid',widP_CCbck,'rlen',1); this.add_element(txP_CCbck);
             
 			%n devices
-			txN_d 	 = nmos(strcat(name, ' txN_d'),'wid',widN_D,'rlen',1);	this.add_element(txN_d);
-			txN_dbar	 = nmos(strcat(name, ' txN_{dbar}'),'wid',widN_Dbar,'rlen',1);	this.add_element(txN_dbar);
-			txN_clk 	 = nmos(strcat(name, ' txN_{clk}'),'wid',widN_Clk,'rlen',1);	this.add_element(txN_clk);
-			txN_bridge	 = nmos(strcat(name, ' txN_{bridge}'),'wid',widN_Bridge,'rlen',1);	this.add_element(txN_bridge);
+			txN_d 	 = nmos('txN_d','wid',widN_D,'rlen',1);	this.add_element(txN_d);
+			txN_dbar	 = nmos('txN_dbar','wid',widN_Dbar,'rlen',1);	this.add_element(txN_dbar);
+			txN_clk 	 = nmos('txN_clk','wid',widN_Clk,'rlen',1);	this.add_element(txN_clk);
+			txN_bridge	 = nmos('txN_bridge','wid',widN_Bridge,'rlen',1);	this.add_element(txN_bridge);
 			
             %p devices
-            txP_preCharge0  = pmos(strcat(name,' txP_{preCharge0}'),'wid',widP_preCharge0,'rlen',1); this.add_element(txP_preCharge0);
-			txP_preCharge1	 = pmos(strcat(name, ' txP_{preCharge1}'),'wid',widP_preCharge1,'rlen',1);	this.add_element(txP_preCharge1);
+            txP_preCharge0  = pmos('txP_preCharge0','wid',widP_preCharge0,'rlen',1); this.add_element(txP_preCharge0);
+			txP_preCharge1	 = pmos('txP_preCharge1','wid',widP_preCharge1,'rlen',1);	this.add_element(txP_preCharge1);
 
             this.connect(this.s,txN_CCbck.d,txP_CCbck.d,txN_CCfwd.g,txP_CCfwd.g,txP_preCharge0.d);
             this.connect(this.r,txN_CCfwd.d,txP_CCfwd.d,txN_CCbck.g,txP_CCbck.g,txP_preCharge1.d);
