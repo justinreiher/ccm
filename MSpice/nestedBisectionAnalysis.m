@@ -46,7 +46,11 @@
 %           optional settings -
 %               opts:       A way of overriding the integration options set
 %                           by the testbench. Not recommended.
-%           
+%
+%           t: The numerically integrated time points associated with
+%              lambda.
+%           lambda: The homogenous part of the solution to the differential
+%                   equation for the synchronizer gain g.
 %
 %   dbeta = dbeta_ode(Jac,dhda,beta_ode): construct ODE for beta(t) by
 %   computing d/dt beta(t) = Jac(t)*beta(t) + dh/d t_in.
@@ -60,6 +64,8 @@
 %           this is an integration which goes backwards in time
 %     Jac:  The Jacobian of the synchronizer at time t
 %     w_ode: numerically integrated vector w(t) at time t (un-normalized)
+%
+%     dwdt: The time derivate of w(t).
 %       
 %   [g,dgdt,lambda] = gainSync(,wNorm,Jac,beta,dhda): computes the
 %   homogenous portion of the instantaneous gain lambda of the synchronizer, 
@@ -72,6 +78,7 @@
 %       beta:   The vector beta at time t
 %       dhda:   The vector of the synchronizer's state derivative with
 %               respect to the input transition time tin
+%
 %       g:      The synchronizer's gain g(t) at time t
 %       dgdt:   The synchronizer's time derivative at time t
 %       lambda: The synchronizer's homogenous part of the differential
@@ -90,37 +97,151 @@
 %       traj_t: A splined object which can compute the metastable
 %               trajectory for t in [0, tCrit].
 %       Jac_t:  A splined object which can compute the Jacobian of the
-%               synchronizer for t in [0,tCrit].
+%               synchronizer for t in [0,teola].
 %       dhda_t: A splined object which can compute the synchronizer's
 %               state derivative with respect to its input transisition
-%               time tin for t in [0,tCrit].
+%               time tin for t in [0,teola].
 %       dataTransition: The time at which tin effectively occurs.
 %       beta_t: A splined object which can compute the synchronizer's gain
-%               beta(t) for t in [0,tCrit].
+%               beta(t) for t in [0,teola].
 %       timeSpan:   The time span on which to integrate over.
 %       uVcrit:  A vector which determines the quantity of importance in
 %                metastability resolution at tCrit. Provided by the user.
-%                This vector is automatically normalized. 
+%                This vector is automatically normalized.
+%
+%       dGdw_tCrit: The gradient of the synchronizer gain g at time tCrit
+%                   with respect to the synchronizer's transistor widths.
+%       gamma:      The time evolution of gamma.
+%       t:          The time points of numerical integration.
+%
+%   gammaDot = gamma_ode(t,traj,Jac,dhda,beta,gamma,dataTransition): This
+%   function computes the time derivative of gamma, which is the time
+%   derivative of partial beta/partial w, where w is the vector of
+%   transistor widths.
+%       t: The time point of integration
+%       traj: The metastable circuit state at time t
+%       Jac:  The Jacobian of the synchronizer circuit at time t
+%       dhda: The vector of the synchronizer's state derivative with
+%             respect to the input transition time tin.
+%       beta: The vector of the synchronizer's overall gain beta at time t
+%       gamma: The numerically integrated value of gamma at time t
+%       dataTransition: The time at which tin effectively occurs.
+%
+%       gammaDot: The evaluated time derivative of gamma.
+%
+%   [VmSpl_t,time,teola] = splineBisection(bisectionData,tCrit): Function
+%   which interpolates a trajectory which just meets the threshold
+%   criteria at time tCrit and builds a splined circuit state model for
+%   time t in [0,tCrit] used to create the small signal analysis of the
+%   synchronizer.
+%       bisectionData: The data produced by running the nested bisection
+%                      algorithm.
+%       tCrit:         The user defined critical time at which the
+%                      synchronizer just meets the threshold criteria.
+%
+%       VmSpl_t:       A splined object which can compute the
+%                      synchronizer's circuit state for any time in
+%                      [0,tCrit].
+%       time:          The numerically integrated time points which are
+%                      used to generate the splined object.
+%       teola:         The time at which the linear analysis ends.
+%       
+%   vfull = getVfull(tSample,dataTransition,state): Computes the full
+%   voltage vector which includes external voltage source for the time
+%   points in tSample with the synchronizer's input transistion occuring at
+%   time dataTransition.
+%       tSample: The time points at which to evaluate the full voltage
+%                vector
+%       dataTransition: The time at which the synchronizer's data input
+%                       transistion occurs (tin).
+%       state:          The synchronizer's internal volatage state.
+%
+%       vfull: The augmented circuit state "state" with voltage sources at
+%              evaluated at times tSample.
+%
+%  [Jac,dhda,vdot,dIdx_allDev,C_allDev] = 
+%  computeJacVdot(t,dataTransition,metaStableState): Function which
+%  computes the synchronizer's Jacobian, the derivative of synchronizer's 
+%  state derivative with respect to its input transistion time, the
+%  derivative function of the synchronizer Vdot, the derivative of the
+%  current for all devices within the synchronizer design with respect to the
+%  synchronizer's state, and finally the associated capacitance for all the 
+%  devices found in the design.
+%  
+%       t: The time point(s) of interest.
+%       dataTransition: The time at which the synchronizer's data input
+%                       transistion occurs (tin).
+%       metaStableState: The synchronizer's internal voltage state at time
+%                        t.
+%
+%       Jac:  The synchronizer's Jacobian at time t.
+%       dhda: The derivative of the synchronizer's derivate state with
+%             respect to it's input tin.
+%       vdot: The time derivative of the synchronizer's state at time t.
+%       dIdx_allDev: The derivative of the current for all devices in the
+%                    circuit at time t with respect to the synchronizers 
+%                    circuit state.
+%       C_allDev: The associated capacitance for each device within the
+%                 synchronizer's design.
+%
+%   [vdot,C,Idev,CapParams] =
+%   computeVdot(t,dataTransition,metaStableState): Function which computes
+%   the derivate function of the synchronizer at time t, with the
+%   synchronizer's input transistion at time dataTransition.
+%       t: Time at which to evaluate the derivative function of the
+%       synchronizer.
+%       dataTransition: Time at which the synchronizer's input transition
+%                       occurs (tin).
+%       metaStableState: The synchronizer's circuit state at time t.
+%
+%       vdot: The synchronizer's derivative state at time t.
+%       C:    The synchronizer's capacitance matrix at time t.
+%       Idev: The synchronizer's device currents at time t.
+%       CapParams: The synchronizer's capacitance parameters at time t,
+%                  used to compute the capacitance matrix C.
+%
+%   [Jac,dhda,dIdxDev_Tot,Cdev_Tot] =
+%   computeJac(t,dataTransition,metaStableState,C,I,CapParams): Function
+%   which computes the synchronizer's Jacobian, the derivative of the
+%   synchronizer's state derivative function with respect to its input
+%   transition time, the derivative of the current for all devices within
+%   the synchronizer's design with respect to it's state, and finally the
+%   capacitance associated with each device within the design.
+%
+%       t: Time point(s) at which to evaluate the quantities of interest
+%       dataTransition: Time at which the synchronizer's input transition
+%                       occurs (tin).
+%       metaStableState: The synchronizer's circuit state at time t.
+%       C:    The synchronizer's capacitance matrix at time t.
+%       I:    The synchronizer's device currents at time t.
+%       CapParams: The synchronizer's capacitance parameters at time t,
+%                  used to compute the capacitance matrix C.
+%
+%       Jac:  The synchronizer's Jacobian at time t.
+%       dhda: The derivative of the synchronizer's derivate state with
+%             respect to it's input tin.
+%       dIdxDev_Tot: The derivative of the current for all devices in the
+%                    circuit at time t with respect to the synchronizers 
+%                    circuit state.
+%       Cdev_Tot: The associated capacitance for each device within the
+%                 synchronizer's design.
+%
+%   Mdev = computeMapMatrixDevice(in,out): Function which returns the
+%   sparse matrix which selects all devices that have a connection to nodes
+%   in and out.
+%       in: The input node of interest for the devices connected to node
+%           "in".
+%       out: The output node of interest for the devices connected to node
+%            "out".
+%
+%       Mdev: The sparse matrix which selects all devices which have a
+%             connection to nodes "in" and "out".
+%
+%   Mdev = computeMapMatrixDeviceTx(in,out,type): Function which
+%   returns the sparse matrix which selects all devices of "type" that have
+%   a node connected to "in" and "out".
+%       in
 %   
-%   It also provides function for verification (only if voltage sources support verification interface)
-%   [c,err] = dV_ldi(region,states): LDI model for the whole system
-%     region: an object of "shape" class
-%     states: each element is passed to each voltage source
-%     c,err:  dv \IN c'*[V;1]+/-err.
-%
-%   [c,err] = dV_ldi_var(region,var,states): LDI model for one node
-%
-%   str = name: the class name of the circuit
-%
-%   n  = dim:   the number of dimensions of the system dyanamics
-%
-%   ind = find_port_index: wrapper of circuit's "find_port_index" funcition.
-%
-%   n = inputNum: the number of input sources
-%
-%   is = inputs: return the voltage sources (same as sources)
-%
-%
 
 classdef nestedBisectionAnalysis < testbench
     properties (GetAccess='public', SetAccess='private');
@@ -210,7 +331,7 @@ classdef nestedBisectionAnalysis < testbench
         %         - 'clkEdgeSettings': is a struct which contains:
         %                                  - 'low': which is a percentage of
         %                                  vdd on the low end where the half
-        %                                  way of clos is found, default is
+        %                                  way of clock is found, default is
         %                                  48%
         %                                  - 'high': which is a percentage of
         %                                  vdd on the high end where the half
@@ -324,7 +445,7 @@ classdef nestedBisectionAnalysis < testbench
             time = bisectionData{10,2};
             t0 = time(1);
             beta0 = bisectionData{6,2}(:,1);
-            [splMeta,t,teola] = this.splineBisection(bisectionData,tCrit,uVcrit);
+            [splMeta,t,teola] = this.splineBisection(bisectionData,tCrit);
             tspan = [t0,teola];
             
             
@@ -752,7 +873,7 @@ classdef nestedBisectionAnalysis < testbench
     end
         
         
-        function [VmSpl_t,time,teola] = splineBisection(this,bisectionData,tCrit,uVcrit)
+        function [VmSpl_t,time,teola] = splineBisection(this,bisectionData,tCrit)
             %this function takes in a set of bisection trajectories and creates
             %a spline fit for the trajectory that is metastable up to time
             %teola
