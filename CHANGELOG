@@ -15,4 +15,18 @@
     a. remove many unused codes, device models and circuits 
     b. easier interface for configurate the software
     c. code format
-     
+	
+2020-04-21: version 2.0
+	1. Further code structure re-organization:
+		a. 	Created interface for additional models, such that a model class implements the interface to be used in a simulation
+		b. 	Added a model dictionary object which is responsible for providing the user with the available models that can be used.
+		c. 	Changed MOS device creation to have 4 terminals (Drain, Gate, Source, Body) with the option of auto-connected terminals to provided voltage sources.
+		d. 	Created a testbench subclass for the nested bisection algorithm and its analysis.
+     2. New features
+		a. 	Added the ability to plot current and voltages for nodes of interest in the testbench.
+		b. 	Added the ability to create a circuit path structure for user defined circuits. Created as part of the constructor.
+		c.	Added the nested bisection algorithm as a special testbench class. Redefined simulation options as a struct with defaults in its constructor but with the ability to define particular fields in a MATLAB struct object or via a (key,value) pair -> follows MATLAB convention.
+		d.	Added the nested bisection analysis, small-signal model creation and optimization routines as another special testbench class. This class requires IntLAB Automatic Differentiation.
+		e.	Added models for a simplified EKV model and AD friendly version of the MVS model (slow to run) fit to PTM 45nmHP model cards.
+		f.	Added code which allows a user to see how the PTM 45nmHP model card was fit using SPICE simulations (based on BSIM4 models).
+	3.	Comprehensive Manual v2 is coming, with examples and tutorials outlining all options and features available.

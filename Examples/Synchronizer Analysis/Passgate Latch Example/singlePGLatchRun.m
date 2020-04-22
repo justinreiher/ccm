@@ -12,11 +12,10 @@ pDevices = even(transistorNumbering);
 
 transistorWidths = ones(12,1)*450e-7;
 
-pgREF = PASSGATE_LATCH_TEST('pgL',450e-7,1);
 pg = PASSGATE_LATCH_TEST('pgL',transistorWidths,1);
-mask = [6,6];
+mask = [pg.cctPath.q,pg.cctPath.q];
 
-uVcrit = [6,9];
+uVcrit = [pg.cctPath.q,pg.cctPath.pgl0.x0];
 
 uVcritBench = zeros(1,10);
 uVcritBench(uVcrit) = [1,-1];

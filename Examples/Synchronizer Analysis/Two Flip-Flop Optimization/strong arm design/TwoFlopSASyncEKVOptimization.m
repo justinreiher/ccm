@@ -19,8 +19,8 @@ minWidth = 200e-7;
 numTx = 40;
 
 uVcrit = zeros(1,24);
-uVcrit(13) = 1;
-uVcrit(14) = -1;
+uVcrit(sync.cctPath.saFF_1.s) = 1;
+uVcrit(sync.cctPath.saFF_1.r) = -1;
 transistorNumbering = 1:1:numTx;
 nDevices = [1,3, 5,7, 9,10,11,12, 15,16,19,20   23,25, 27,28,29,30, 33,34,37,38];
 pDevices = [2,4, 6,8, 13,14,      17,18,21,22,  24,26, 31,32,       35,36,39,40];
