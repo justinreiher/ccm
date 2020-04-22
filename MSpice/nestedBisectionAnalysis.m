@@ -455,9 +455,9 @@ classdef nestedBisectionAnalysis < testbench
             
             
             assert(numStates == length(splMeta(1)));
-            [~,numDevN] = size(this.syncMatrixMap{1});
-            [totalNumStates,numDevP] = size(this.syncMatrixMap{2});
-            numDev = numDevN+numDevP;
+            [~,numDevN_nodes] = size(this.syncMatrixMap{1});
+            [totalNumStates,numDevP_nodes] = size(this.syncMatrixMap{2});
+            numDevNodes = numDevN_nodes+numDevP_nodes;
             
             
             % Integrator
@@ -480,8 +480,8 @@ classdef nestedBisectionAnalysis < testbench
             iter = length(t);
             scale = this.tbOptions.capScale;
             Jac = zeros([numStates^2,iter]);
-            dIdx_Dev = zeros([numDev*totalNumStates,iter]);
-            C_Dev = zeros([numDev*totalNumStates,iter]);
+            dIdx_Dev = zeros([numDevNodes*totalNumStates,iter]);
+            C_Dev = zeros([numDevNodes*totalNumStates,iter]);
             vdot = zeros([numStates,iter]);
             dhda = zeros([numStates,iter]);
             fprintf('starting computation for Jac(t) and dh(t)/da...\n')
@@ -490,23 +490,15 @@ classdef nestedBisectionAnalysis < testbench
                 vSample = splMeta(t(i));
                 [J,dhda(:,i),vdot(:,i),dIdxDev,CDev] = this.computeJacVdot(t(i),dataTransition,vSample);
                 Jac(:,i) = reshape(J,[numStates^2,1]);
-                dIdx_Dev(:,i) = reshape(dIdxDev,[numDev*totalNumStates,1]);
-                C_Dev(:,i) = reshape(CDev,[numDev*totalNumStates,1]);
+                dIdx_Dev(:,i) = reshape(dIdxDev,[numDevNodes*totalNumStates,1]);
+                C_Dev(:,i) = reshape(CDev,[numDevNodes*totalNumStates,1]);
             end
             toc()
             
-            if(this.tbOptions.debug)
-                save(strcat(filename,'_jacAll.mat'),'Jac','dhda','vdot','dIdx_Dev','C_Dev');
-            end
+            save(strcat(filename,'_RawDerivativesAll.mat'),'Jac','dhda','vdot','dIdx_Dev','C_Dev');
 
             
             jacP = pchip(t,Jac);
-            dIdxP = pchip(t,dIdx_Dev);
-            CdevP   = pchip(t,C_Dev);
-            
-            
- %           dIdxDev_t = @(t) reshape(ppval(dIdxP,t),[numDev,totalNumStates]);
- %           Cdev_t    = @(t) reshape(ppval(CdevP,t),[numDev,totalNumStates]);
             Jac_t = @(t) reshape(ppval(jacP,t),[numStates,numStates]);
             
             dhdaP = pchip(t,dhda);
