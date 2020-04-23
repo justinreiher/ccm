@@ -21,7 +21,7 @@ classdef THREE_RING_OSC < circuit
     % E.g. myOsc = THREE_RING_OSC('osc0',450e-7,1)
     
     properties (GetAccess = 'public', SetAccess = 'private')
-        vdd,gnd,d,clk,clkbar; q,qbar; %Input ; Output
+        vdd,gnd; %Input
     end
     
     methods
