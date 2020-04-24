@@ -1,23 +1,26 @@
+% Definition of a TWO_FLOP_JAMB_SYNC with JAMB_FF and INV4 elements
+%and defines a two flip-flop jamb latch synchronizers 
+% The Jamb synchronizer has 6 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% 6. reset:  reset input to reset the jamb latches in the synchronizer
+% The passgate latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a TWO_FLOP_JAMB_SYNC, requires
+% 1. name: Jamb synchronizer name
+% 2. wid: circuit width, wid(1:2)   input buffer (INV4)
+%                        wid(3:4)   output buffer (INV4)
+%                        wid(5:18)  Master Jamb flip-flop (JAMB_FF)
+%                        wid(19:32) Slave Jamb flip-flop (JAMB_FF)
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. sync = TWO_FLOP_JAMB_SYNC('jlSync',450e-7,1)
 classdef TWO_FLOP_JAMB_SYNC < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
-    
+
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar,reset; q,qbar; %Input ; Output
     end

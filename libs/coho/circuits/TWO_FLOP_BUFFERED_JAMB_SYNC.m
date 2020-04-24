@@ -1,22 +1,27 @@
+% Definition of a TWO_FLOP_BUFFERED_JAMB_SYNC with JAMB_FF and INV4 elements
+%and defines a two flip-flop jamb latch synchronizers where there is a
+%buffer inverter between each latch.
+% The Jamb synchronizer has 6 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% 6. reset:  reset input to reset the jamb latches in the synchronizer
+% The passgate latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a TWO_FLOP_BUFFERED_JAMB_SYNC, requires
+% 1. name: Jamb synchronizer name
+% 2. wid: circuit width, wid(1:2)   output buffer (INV4)
+%                        wid(3:20)  Master buffered Jamb flip-flop
+%                                   (JAMB_FF_BUFFERED)
+%                        wid(21:38) Slave buffered Jamb flip-flop
+%                                   (JAMB_FF_BUFFERED)
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. sync = TWO_FLOP_BUFFERED_JAMB_SYNC('jlSync',450e-7,1)
 classdef TWO_FLOP_BUFFERED_JAMB_SYNC < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar,reset; q,qbar; %Input ; Output
@@ -63,14 +68,14 @@ classdef TWO_FLOP_BUFFERED_JAMB_SYNC < circuit
             this.qbar = this.add_port(node('qbar'));
             
             bufInvOut     = INV4(strcat(name,' bufOut'),widBufOut,rlenBufferOut); this.add_element(bufInvOut);
-            jamb_ffMaster = JAMB_FF(strcat(name,' JFF_0'),widMaster,rlenMaster); this.add_element(jamb_ffMaster);
-            jamb_ffSlave  = JAMB_FF(strcat(name,' JFF_1'),widSlave,rlenSlave); this.add_element(jamb_ffSlave);
+            jamb_ffMaster = JAMB_FF_BUFFERED(strcat(name,' JFF_0'),widMaster,rlenMaster); this.add_element(jamb_ffMaster);
+            jamb_ffSlave  = JAMB_FF_BUFFERED(strcat(name,' JFF_1'),widSlave,rlenSlave); this.add_element(jamb_ffSlave);
             
             
             this.connect(this.d,jamb_ffMaster.d);
-            this.connect(jamb_ffMaster.q,jamb_ffSlave.d);
-            this.connect(this.q,jamb_ffSlave.q,bufInvOut.i);
-            this.connect(this.qbar,bufInvOut.o);
+            this.connect(jamb_ffMaster.qbar,jamb_ffSlave.d);
+            this.connect(this.qbar,jamb_ffSlave.q,bufInvOut.i);
+            this.connect(this.q,bufInvOut.o);
             this.connect(this.clk,jamb_ffMaster.clk,jamb_ffSlave.clk);
             this.connect(this.clkbar,jamb_ffMaster.clkbar,jamb_ffSlave.clkbar);
             this.connect(this.vdd,jamb_ffMaster.vdd,jamb_ffSlave.vdd,bufInvOut.vdd);

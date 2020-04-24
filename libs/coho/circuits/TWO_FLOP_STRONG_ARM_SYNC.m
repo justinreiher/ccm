@@ -1,22 +1,30 @@
+% Definition of a TWO_FLOP_STRONG_ARM_SYNC with STRONG_ARM_FF and INV4 elements
+% defines a two flip-flop strong arm synchronizer
+% The strong arm synchronizer has 4 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+%
+% The Strong Arm synchronizer has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a TWO_FLOP_STRONG_ARM_SYNC, requires
+% 1. name: strong arm synchronizer name
+% 2. wid: circuit width, wid(1:2)   is the input buffer for the synchronizer
+%                                   (INV4)
+%                        wid(3:4)   is the logical inverse of the buffered
+%                                   input (INV4)
+%                        wid(5:22)  is for the Master stage of the 
+%                                   synchronizer (STRONG_ARM_FF)
+%                        wid(23:40) is for the Slave stage of the 
+%                                   synchronizer (STRONG_ARM_FF)
+%
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. sync = TWO_FLOP_STRONG_ARM_SYNC('saSync',450e-7,1)
+
 classdef TWO_FLOP_STRONG_ARM_SYNC < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk; q,qbar; %Input ; Output

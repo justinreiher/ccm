@@ -1,22 +1,16 @@
+% Definition of a VSRC_TEST with vrsc elements to test having voltage
+% source in the middle of a circuit, making sure that the voltages add
+% properly
+%
+% The test has 1 input node:
+% 1. gnd:    circuit ground
+% The test has 1 output nodes:
+% 1. out:      output
+%
+% To create a VSRC_TEST, requires
+% 1. name: test name
+% E.g. myTest = VSRC_TEST('test')
 classdef VSRC_TEST < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         gnd; out;
@@ -25,7 +19,7 @@ classdef VSRC_TEST < circuit
     methods
         function this = VSRC_TEST(name)
             if(nargin<1)
-                error('must provide name and width');
+                error('must provide name');
             end
            
             this = this@circuit(name);
@@ -50,12 +44,6 @@ classdef VSRC_TEST < circuit
             
             this.finalize;
             
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end

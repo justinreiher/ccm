@@ -1,23 +1,25 @@
+% Definition of a TWO_FLOP_PG_SYNC with PASSGATE_FF and INV4 elements
+% which defines a two flip-flop passgate synchronizer
+% The passgate synchronizer has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% The passgate latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a , requires
+% 1. name: passgate latch name
+% 2. wid: circuit width, wid(1:2)   is for the input buffer (INV4)
+%                        wid(3:22)  is for the Master stage (PASSGATE_FF)
+%                        wid(23:42) is for the Slave stage (PASSGATE_FF)
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. sync = TWO_FLOP_PG_SYNC('pgSync',450e-7,1)
+
 classdef TWO_FLOP_PG_SYNC < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
-    
+   
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar; q,qbar; %Input ; Output
     end

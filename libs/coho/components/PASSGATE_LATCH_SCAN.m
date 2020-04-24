@@ -1,5 +1,7 @@
 % Definition of a PASSGATE_LATCH_SCAN with PASSGATE and INV4 elements    
-%
+% defines a passgate latch where an additional inverter is placed on the q
+% node of the latch (i.e. on the output of the forward cross-coupled pair
+% of inverters within the latch).
 % The passgate latch has 5 input nodes:
 % 1. vdd:    power supply source
 % 2. gnd:    circuit ground

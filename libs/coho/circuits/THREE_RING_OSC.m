@@ -14,9 +14,9 @@
 % 2. wid: circuit width
 %       - if one wid is given that width is applied to all devices
 %       - otherwise width needs to be of length 6:
-%           wid(1:2) = nmos inv 1, pmos inv 1
-%           wid(3:4) = nmos inv 2, pmos inv 2
-%           wid(5:6) = nmos inv 3, pmos inv 3
+%           wid(1:2) = is for inv0 (INV4)
+%           wid(3:4) = is for inv1 (INV4)
+%           wid(5:6) = is for inv2 (INV4)
 % 3. rlen: relative device length, use 1 by default.
 % E.g. myOsc = THREE_RING_OSC('osc0',450e-7,1)
 classdef THREE_RING_OSC < circuit
