@@ -6,10 +6,8 @@
 %            wid(1) is the nmos width (nmos)
 %            wid(2) is the pmos width (pmos)
 %   3. rlen: (circuit length)/(minimum length), use 1 by default
-% E.g. inv = INV('inv',[1e-5,2e-5],1)
-% NOTE: It's different from 'inverter' that 'INV' consists of 'nmos' and 'pmos'.
-%  i.e. a function call of 'INV' requires two function calls from 'nmos','pmos'.
-%  while a function call of 'inverter' issues one call from the mat file directly.
+% E.g. inv = INV4('inv',[1e-5,2e-5],1)
+% INV4 constructs inverters with 4 terminal transistors
 classdef INV4 < circuit
   properties (GetAccess='public', SetAccess='private');
     vdd,gnd,i; o;
