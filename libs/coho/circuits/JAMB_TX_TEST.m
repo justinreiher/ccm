@@ -1,24 +1,24 @@
+% Definition to test current flowing through 2 NMOS transistors in
+% series, used to solve for the node between them
+%       vtop
+%       _|
+% d   -|_  <- txD
+%        |_ z
+%       _|
+% clk -|_  <-txClk
+%        |
+%       gnd
+% This circuit has 3 inputs:
+% 1. vdd:    power supply source, d and clk are tied to vdd
+% 2. gnd:    circuit ground
+% 3. vtop:   input from inverter pre-computed
+%
+% To create a JAMB_TX_TEST, requires
+% 1. name: circuit name
+% 2. wid: circuit width, wid(1) is for txD
+%                        wid(2) is for txClk
+% 3. rlen: relative circuit length, use 1 by default.
 classdef JAMB_TX_TEST < circuit
-    % Definition to test current flowing through 2 NMOS transistors in
-    % series, used to solve for the node between them
-    %       vtop
-    %       _|
-    % d   -|_  <- txD
-    %        |_ z
-    %       _|
-    % clk -|_  <-txClk
-    %        |
-    %       gnd
-    % This circuit has 3 inputs:
-    % 1. vdd:    power supply source, d and clk are tied to vdd
-    % 2. gnd:    circuit ground
-    % 3. vtop:   input from inverter pre-computed
-    %
-    % To create a JAMB_TX_TEST, requires
-    % 1. name: circuit name
-    % 2. wid: circuit width, wid(1) is for txD
-    %                        wid(2) is for txClk
-    % 3. rlen: relative circuit length, use 1 by default.
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd; vtop; gnd; z;

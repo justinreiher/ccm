@@ -1,23 +1,32 @@
-classdef JAMB_LATCH < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
-    
+% Definition of a JAMB_LATCH with INVERTER and nmos elements.
+%
+% The jamb latch has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. reset:  resets the jamb latch
+%
+% The jamb latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a JAMB_LATCH, requires
+% 1. name: jamb latch name
+% 2. wid: circuit width, wid(1:2) is for the forward facing
+%                                 cross-coupled pair of inverters (INV4)
+%                        wid(3:4) is for the backward facing
+%                                 cross-coupled pair of inverters (INV4)
+%                        wid(5)   is for the nmos pull down on the
+%                                 data signal (nmos)
+%                        wid(6)   is for the nmos pull down on the
+%                                 clock signal (nmos)
+%                        wid(7)   is for the nmos pull down on the
+%                                 reset signal (nmos)
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. jlLatch = JAMB_LATCH('jl_0',450e-7,1) creates a jamb latch where
+% all transistor widths are 450nm wide.
+classdef JAMB_LATCH < circuit    
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,reset,clk; q,qbar; %Input ; Output
     end
@@ -79,12 +88,6 @@ classdef JAMB_LATCH < circuit
             
             this.finalize;
             
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end

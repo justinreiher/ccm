@@ -1,14 +1,31 @@
-% This circuit defines a NAND circuit. 
-% A 'NAND' has nodes: 
+% This circuit defines a two input NAND2 circuit. 
+% A 'NAND2' has nodes: 
 %   1. i1/i2: first and second inputs
 %   2. o:     output
+%   3. vdd/gnd: power terminals
+%
+%      vdd         vdd
+%      ---         ---
+%       |_          |_
+%    p1  _|o- i1  p2 _|o- i2
+%       |___________|______ out
+%            _|
+%        i1-|_  n1
+%            _|
+%        i2-|_  n2
+%             |
+%            ---
+%            gnd
 % To create a circuit, requires
 %   1. name: circuit name
 %   2. wid:  circuit width
-%            wid(1) is the nmos width
-%            wid(2) is the pmos width, use wid(1) by default
+%            wid(1) is the nmos n1 width
+%            wid(2) is the nmos n2 width
+%            wid(3) is the pmos p1 width
+%            wid(4) is the pmos p2 width
 %   3. rlen: relative circuit length, use 1 by deault.
-% E.g. n = NAND('nand',[1e-5;1e-5]);
+% E.g. nand2 = NAND2('nand_0',450e-7,1); Creates a NAND2 devices with all
+% transistor widths of 450nm.
 classdef NAND2 < circuit
   properties (GetAccess='public', SetAccess='private');
     i1,i2; vdd; gnd; % input

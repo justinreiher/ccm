@@ -1,22 +1,27 @@
+% Definition of a THREE_FLOP_PG_SYNC with PASSGATE_FF and INV4 elements
+% defines a three flip-flop passgate synchronizer
+%
+% The three stage passgate synchronizer has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% The synchronizer has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a THREE_FLOP_PG_SYNC, requires
+% 1. name: synchronizer latch name
+% 2. wid: circuit width, wid(1:2)   is for the buffer INV4
+%                        wid(3:22)  is for the first Master PASSGATE_FF
+%                        wid(23:42) is for the first Slave PASSGATE_FF
+%                        wid(43:62) is for the second Master PASSGATE_FF
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. sync = THREE_FLOP_PG_SYNC('syncPG3',450e-7,1) creates a 3 stage
+% passgate synchronizer with all transistor widths set to 450nm.
+
 classdef THREE_FLOP_PG_SYNC < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar; q,qbar; %Input ; Output

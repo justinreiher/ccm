@@ -1,22 +1,30 @@
+% Definition of a STRONG_ARM_FF with STRONG_LATCH and NAND2 elements.
+%
+% The strong flip-flop has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. dbar:   logical inverse of d
+% 4. clk:    clock input
+%
+% The strong arm flip-flop has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a STRONG_ARM_FF, requires
+% 1. name: strong arm latch name
+% 2. wid: circuit width, wid(1:10)  is for the strong arm latch
+%                                   (STRONG_ARM_LATCH)
+%                        wid(11:14) is for one of the cross-coupled 
+%                                   2-input nand gates (NAND2)  
+%                        wid(15:18) is for one of the cross-coupled 
+%                                   2-input nand gates (NAND2)
+%
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. saFF = STRONG_ARM_FF('saFF_0',450e-7,1) creates a strong arm flip-flop 
+% where all transistor widths are 450nm wide.
+
 classdef STRONG_ARM_FF < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,dbar,clk; q,qbar; %Input ; Output
@@ -74,8 +82,7 @@ classdef STRONG_ARM_FF < circuit
             this.connect(this.gnd,sarmL.gnd,nand0.gnd,nand1.gnd);
             this.finalize;
             
-        end
-        
+        end     
     end
 end
 

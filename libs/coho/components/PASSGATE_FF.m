@@ -1,22 +1,23 @@
+% Definition of a PASSGATE_FF with PASSGATE_LATCH elements
+%
+% The passgate flip-flop has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% The passgate latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a PASSGATE_FF, requires
+% 1. name: passgate flip-flop name
+% 2. wid: circuit width, wid(1:10)  is for the master stage
+%                        wid(11:20) is for the slave stage
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. pgFF = PASSGATE_FF('pgFF_0',450e-7,1) creates a passgate flip-flop
+% where all the transistor widths are 450nm.
 classdef PASSGATE_FF < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar; q,qbar; %Input ; Output
@@ -74,12 +75,6 @@ classdef PASSGATE_FF < circuit
             this.connect(this.qbar,pgl_slave.qbar);
             this.finalize;
             
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end

@@ -1,22 +1,30 @@
+% Definition of a PASSGATE_LATCH_SCAN with PASSGATE and INV4 elements    
+%
+% The passgate latch has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. clkbar: clock bar (i.e. the opposite polarity to clock)
+% The passgate latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a PASSGATE_LATCH_SCAN, requires
+% 1. name: passgate latch name
+% 2. wid: circuit width, wid(1:2)   is for pg0 (PASSGATE)
+%                        wid(3:4)   is for pg1 (PASSGATE)
+%                        wid(5:6)   is for inv0 (INV4)
+%                        wid(7:8)   is for inv1 (INV4)
+%                        wid(9:10)  is for inv2 (INV4)
+%                        wid(11:12) is for invS1 (INV4)
+%                        wid(13:14) is for invS2 (INV4)
+%                        
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. pgLatchScan = PASSGATE_LATCH_SCAN('pg0scan',450e-7,1) creates a
+% passgate latch with scan that has all transistors set to 450nm.
+
 classdef PASSGATE_LATCH_SCAN < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,clkbar; q,qbar; %Input ; Output
@@ -90,12 +98,6 @@ classdef PASSGATE_LATCH_SCAN < circuit
             this.connect(this.gnd,inv0.gnd,inv1.gnd,inv2.gnd,pg_0.gnd,pg_1.gnd,invS1.gnd,invS2.gnd);
             this.finalize;
             
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end

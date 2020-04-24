@@ -1,24 +1,25 @@
+% Definition of a THREE_RING_OSC a three stage ring oscillator with
+% INV4 elements
+%
+% The three ring oscillator has 2 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% The three ring oscillator has 3 output nodes:
+% 1. v1:     the first output of the oscillator
+% 2. v2:     the second output of the oscillator
+% 3. v3:     the third output of the oscillator
+%
+% To create a THREE_RING_OSC, requires
+% 1. name: oscillator name
+% 2. wid: circuit width
+%       - if one wid is given that width is applied to all devices
+%       - otherwise width needs to be of length 6:
+%           wid(1:2) = nmos inv 1, pmos inv 1
+%           wid(3:4) = nmos inv 2, pmos inv 2
+%           wid(5:6) = nmos inv 3, pmos inv 3
+% 3. rlen: relative device length, use 1 by default.
+% E.g. myOsc = THREE_RING_OSC('osc0',450e-7,1)
 classdef THREE_RING_OSC < circuit
-    % Definition of a THREE_RING_OSC
-    %
-    % The three ring oscillator has 2 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % The three ring oscillator has 3 output nodes:
-    % 1. v1:     the first output of the oscillator
-    % 2. v2:     the second output of the oscillator
-    % 3. v3:     the third output of the oscillator
-    %
-    % To create a THREE_RING_OSC, requires
-    % 1. name: oscillator name
-    % 2. wid: circuit width
-    %       - if one wid is given that width is applied to all devices
-    %       - otherwise width needs to be of length 6:
-    %           wid(1:2) = nmos inv 1, pmos inv 1
-    %           wid(3:4) = nmos inv 2, pmos inv 2
-    %           wid(5:6) = nmos inv 3, pmos inv 3
-    % 3. rlen: relative device length, use 1 by default.
-    % E.g. myOsc = THREE_RING_OSC('osc0',450e-7,1)
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd; %Input

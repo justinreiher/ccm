@@ -1,5 +1,15 @@
+% Circuit description for a PASSGATE, made of one nmos and pmos device
+% A passgate has an input (i) and output (o) to create a PASSGATE you need
+% to provide:
+%   1. name: circuit name
+%   2. wid: transistor widths
+%       wid(1)  is the nmos width
+%       wid(2)  is the pmos width
+%   3.rlen: circuit length/min length, use 1 by default
+% E.g. pg = PASSGATE('pg0',450e-7,1) creates a PASSGATE with all transistor
+% widths set to 450nm.
+
 classdef PASSGATE < circuit
-    %Circuit description for a Passgate
     
     properties (GetAccess='public', SetAccess='private')
         vdd,gnd,i,g,gbar; o; %Input ; Output

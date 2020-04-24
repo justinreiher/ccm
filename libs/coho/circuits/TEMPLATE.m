@@ -1,5 +1,5 @@
+% Template to be used for your own circuit
 classdef TEMPLATE < circuit
-    % Template to be used for your own circuit
     
     properties (GetAccess = 'public', SetAccess = 'private')
         %Input; %outputs

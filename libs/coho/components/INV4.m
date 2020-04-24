@@ -1,15 +1,15 @@
-% This class defines the 'inverter' circuit for COHO library 
+% This class defines the 'inverter' circuit for COHO library
 % An 'inverter' has two nodes: i(input) and o(output)
 % To create an inveter, need to provide
 %   1. name: circuit name
-%   2. wid:  circuit width 
-%            wid(1) is the nmos width
-%            wid(2) is the pmos width, use 2*wid(1) if not provided.
+%   2. wid:  circuit width
+%            wid(1) is the nmos width (nmos)
+%            wid(2) is the pmos width (pmos)
 %   3. rlen: (circuit length)/(minimum length), use 1 by default
 % E.g. inv = INV('inv',[1e-5,2e-5],1)
-% NOTE: It's different from 'inverter' that 'INV' consists of 'nmos' and 'pmos'. 
-%  i.e. a function call of 'INV' requires two function calls from 'nmos','pmos'. 
-%  while a function call of 'inverter' issues one call from the mat file directly. 
+% NOTE: It's different from 'inverter' that 'INV' consists of 'nmos' and 'pmos'.
+%  i.e. a function call of 'INV' requires two function calls from 'nmos','pmos'.
+%  while a function call of 'inverter' issues one call from the mat file directly.
 classdef INV4 < circuit
   properties (GetAccess='public', SetAccess='private');
     vdd,gnd,i; o;
@@ -23,7 +23,12 @@ classdef INV4 < circuit
         error('must provide name and width'); 
       end
       if(nargin<3||isempty(rlen)), rlen = 1; end
-      if(numel(wid)==1), wid = [1;1]*wid; end
+      if(numel(wid)==1)
+          wid = [1;1]*wid; 
+      else
+          assert(length(wid)==2);
+      end
+      
       this    = this@circuit(name);
       
       this.vdd = this.add_port(node('vdd'));

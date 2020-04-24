@@ -1,22 +1,43 @@
+% Definition of a STRONG_ARM_LATCH with nmos and pmos elements.
+%
+% The strong latch has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. dbar:   logical inverse of d
+% 4. clk:    clock input
+%
+% The jamb latch has 2 output nodes:
+% 1. s:      set
+% 2. r:      reset (i.e. the opposite polarity to set)
+%
+% To create a STRONG_ARM_LATCH, requires
+% 1. name: strong arm latch name
+% 2. wid: circuit width, wid(1)     is the nmos device for the forward
+%                                   cross-coupled inverter (nmos)
+%                        wid(2)     is the pmos device for the forward
+%                                   cross-coupled inverter (pmos)
+%                        wid(3)     is the nmos device for the backward
+%                                   cross-coupled inverter (nmos)
+%                        wid(4)     is the pmos device for the backward
+%                                   cross-coupled inverter (pmos)
+%                        wid(5)     is the nmos device for the input signal
+%                                   d nD (nmos)
+%                        wid(6)     is the nmos device for the input signal
+%                                   dbar nDbar (nmos)
+%                        wid(7)     is the nmos pull down device for the 
+%                                   clock signal nClk (nmos)
+%                        wid(8)     is the nmos device whihc bridges the
+%                                   the pull down path between d and dbar
+%                                   nBridge (nmos)
+%                        wid(9)     is the pmos device for pre-charging the
+%                                   d path of the latch p0 (pmos)
+%                        wid(10)    is the pmos device for pre-charging the
+%                                   dbarpath of the latch p1 (pmos)
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. saL = STRONG_ARM_Latch('sal_0',450e-7,1) creates a strong arm latch 
+% where all transistor widths are 450nm wide.
 classdef STRONG_ARM_LATCH < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
     
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,dbar,clk,clkbar; s,r; %Input ; Output

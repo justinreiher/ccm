@@ -1,23 +1,49 @@
+% Definition of a ROBUST_JAMB_LATCH with INV4, NAND2 and nmos elements.
+%
+% The jamb latch has 5 input nodes:
+% 1. vdd:    power supply source
+% 2. gnd:    circuit ground
+% 3. d:      data input
+% 4. clk:    clock input
+% 5. reset:  resets the jamb latch
+%
+% The jamb latch has 2 output nodes:
+% 1. q:      output
+% 2. qbar:   output bar (i.e. the opposite polarity to q)
+%
+% To create a JAMB_LATCH, requires
+% 1. name: jamb latch name
+% 2. wid: circuit width, wid(1:2)  is for the forward facing
+%                                  cross-coupled pair of inverters (INV4)
+%                        wid(3:4)  is for the backward facing
+%                                  cross-coupled pair of inverters (INV4)
+%                        wid(5:6)  is for the output buffer inverter (INV4)
+%                        wid(7:10) is for the metastability filter 2-input
+%                                  nand (NAND2)
+%                        wid(11)   is the nmos pull down transistor for the
+%                                  data input signal (nmos)
+%                        wid(12)   is the nmos pull down transistor for the
+%                                  clock signal (nmos)
+%                        wid(13)   is the nmos pull down transistor for the
+%                                  reset signal (nmos)
+%                        wid(14)   is the nmos that is part of the 
+%                                  metastability filter - nF0 (nmos)
+%                        wid(15)   is the nmos that is part of the
+%                                  metastabiltiy filter - nF1 (nmos)
+%                        wid(16)   is one of the pmos boosting transistor
+%                                  pB0 (pmos)
+%                        wid(17)   is one of the pmos boosting transistor
+%                                  pB1 (pmos)
+%                        wid(18)   is the pmos that is part of the
+%                                  metastability filter - pF0 (pmos)
+%                        wid(19)   is the pmos that is part of the
+%                                  metastability filter - pF1 (pmos)
+%          
+% 3. rlen: relative circuit length, use 1 by default.
+% E.g. rjlLatch = ROBUST_JAMB_LATCH('rjl_0',450e-7,1) creates a Robust
+% Jamb latch where all transistor widths are 450nm wide.
 classdef ROBUST_JAMB_LATCH < circuit
-    % Definition of a PASSGATE_LATCH with PASSGATE elements and INVERTERS
-    %
-    % The passgate latch has 5 input nodes:
-    % 1. vdd:    power supply source
-    % 2. gnd:    circuit ground
-    % 3. d:      data input
-    % 4. clk:    clock input
-    % 5. clkbar: clock bar (i.e. the opposite polarity to clock)
-    % The passgate latch has 2 output nodes:
-    % 1. q:      output
-    % 2. qbar:   output bar (i.e. the opposite polarity to q)
-    %
-    % To create a PASSGATE_LATCH, requires
-    % 1. name: passgate latch name
-    % 2. wid: circuit width, wid(1) is for the INV
-    %                        wid(2) is for the PASSGATE
-    % 3. rlen: relative circuit length, use 1 by default.
-    % E.g. pgLatch = PASSGATE_LATCH('pg0',[
-    
+   
     properties (GetAccess = 'public', SetAccess = 'private')
         vdd,gnd,d,clk,reset; q,qbar; %Input ; Output
     end
@@ -118,12 +144,6 @@ classdef ROBUST_JAMB_LATCH < circuit
             
             this.finalize;
             
-        end
-        
-        function outputArg = method1(obj,inputArg)
-            %METHOD1 Summary of this method goes here
-            %   Detailed explanation goes here
-            outputArg = obj.Property1 + inputArg;
         end
     end
 end
