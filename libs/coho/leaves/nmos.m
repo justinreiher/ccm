@@ -43,7 +43,12 @@ classdef nmos < coho_leaf
           %This call is now packaged into params and calls the
           %transistorFactory to create the appropriate transistor
           params.wid          = varargin{1};
-          params.gndFlag    = varargin{2}; %this is a legacy flag
+          try
+              ctgFlag = varargin{2};
+          catch
+              ctgFlag = false;
+          end
+          params.gndFlag    = ctgFlag; %this is a legacy flag
           params.rlen       = 1; %the relative length is 1 for nmos device, i.e. we refere to pRlen:1
       elseif(mod(numArg,2)~=0)
           %if the number of arguments in varargin is not even then there is

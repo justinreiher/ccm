@@ -42,7 +42,12 @@ classdef pmos < coho_leaf
           %This call is now packaged into params and calls the
           %transistorFactory to create the appropriate transistor
           params.wid       = varargin{1};
-          params.vddFlag = varargin{2}; %this is a legacy flag
+          try
+              ctgFlag = varargin{2};
+          catch
+              ctgFlag = false;
+          end
+          params.gndFlag    = ctgFlag; %this is a legacy flag
           params.rlen       = varargin{3};
       elseif(mod(numArg,2)~=0)
           %if the number of arguments in varargin is not even then there is
