@@ -2,10 +2,11 @@
 % Function for returning node charges.
 % Yan Peng, UBC, 2016/10/24
 %
-% Justin REiher, UBC, 2020/03/24
-% Modified function to return Capacitance - Requires AD
+% Justin Reiher, UBC, 2020/03/24
+% Returns capacitances instead of charges, requires AD package
 
-function [C] = mvs_c_AD(params, init, iv)
+function [Cdevs] = mvs_c(params, Vin, capParams)
+
 
 % Parameters
 version = params.version;
@@ -36,37 +37,40 @@ nd = params.nd;
 zeta = params.zeta;
 
 % Intermediate values
-LARGE_VALUE = iv.LARGE_VALUE;
-SMALL_VALUE = iv.SMALL_VALUE;
-Qinv = iv.Qinv;
-eta0 = iv.eta0;
-phit = iv.phit;
-Vsi = iv.Vsi;
-Vdi = iv.Vdi;
-Vbsi = iv.Vbsi;
-Vdsi = iv.Vdsi;
-Vgsi = iv.Vgsi;
-Vgsraw = iv.Vgsraw;
-Vgdraw = iv.Vgdraw;
-FF0 = iv.FF0;
-aphit = iv.aphit;
-nphit = iv.nphit;
-me = iv.me;
-vx0 = iv.vx0;
-Leff = iv.Leff;
-Vt0bs0 = iv.Vt0bs0;
-FF = iv.FF;
-Qref = iv.Qref;
-dir = iv.dir;
-Cofs = iv.Cofs;
-Cofd = iv.Cofd;
-Fsat = iv.Fsat;
+junctionCap = capParams.junctionCap;
+LARGE_VALUE = capParams.LARGE_VALUE;
+SMALL_VALUE = capParams.SMALL_VALUE;
+Qinv = capParams.Qinv;
+eta0 = capParams.eta0;
+phit = capParams.phit;
+Vsi = capParams.Vsi;
+Vdi = capParams.Vdi;
+Vbsi = capParams.Vbsi;
+Vdsi = capParams.Vdsi;
+Vgsi = capParams.Vgsi;
+Vgsraw = capParams.Vgsraw;
+Vgdraw = capParams.Vgdraw;
+FF0 = capParams.FF0;
+aphit = capParams.aphit;
+nphit = capParams.nphit;
+me = capParams.me;
+vx0 = capParams.vx0;
+Leff = capParams.Leff;
+Vt0bs0 = capParams.Vt0bs0;
+FF = capParams.FF;
+Qref = capParams.Qref;
+dir = capParams.dir;
+Cofs = capParams.Cofs;
+Cofd = capParams.Cofd;
+Fsat = capParams.Fsat;
 
-Vd = init(1,:);
-Vg = init(2,:);
-Vs = init(3,:);
-Vb = init(4,:);
+Vd = Vin(1,:);
+Vg = Vin(2,:);
+Vs = Vin(3,:);
+Vb = Vin(4,:);
 
+Vdb = Vd.x - Vb.x;
+Vsb = Vs.x - Vb.x;
 
 
 % Calculation of intrinsic charge partitioning factors (qs and qd)
@@ -185,13 +189,13 @@ Qinvd = type * Leff * (( 1 - dir ) .* qs + ( 1 + dir ) .* qd)/ 2.0;
 
 
 % Outer fringing capacitance
-Qsov = Cofs * ( init(2) - Vsi );
-Qdov = Cofd * ( init(2) - Vdi );
+Qsov = Cofs * ( Vin(2) - Vsi );
+Qdov = Cofd * ( Vin(2) - Vdi );
 
 
 % Inner fringing capacitance
-Vt0x = Vt0 + gamma * ( sqrt( abs( phib - type * ( init(4) - Vsi ))) - sqrt(phib));
-Vt0y = Vt0 + gamma * ( sqrt( abs( phib - type * ( init(4) - Vdi ))) - sqrt(phib));
+Vt0x = Vt0 + gamma * ( sqrt( abs( phib - type * ( Vin(4) - Vsi ))) - sqrt(phib));
+Vt0y = Vt0 + gamma * ( sqrt( abs( phib - type * ( Vin(4) - Vdi ))) - sqrt(phib));
 Fs_arg = ( Vgsraw - ( Vt0x - Vdsi .* delta .* Fsat ) + aphit * 0.5 )./ ( 1.1 * nphit );
 % if (Fs_arg <= LARGE_VALUE)
 %     Fs = 1.0 + exp( Fs_arg );
@@ -220,7 +224,26 @@ Qg = -( Qs + Qd + Qb );            %   g-terminal charge
 
 Q = [Qd; Qg; Qs; Qb];
 
+Cdb = junctionDrainCap(Vdb,junctionCap);
+Csb = junctionDrainCap(Vsb,junctionCap);
 
+[numTerminals,numDevices] = size(Vin.x);
+
+Cdevs = zeros(numTerminals,numTerminals,numDevices);
+
+for i = 1:numDevices
+    Cdev_i = Q(:,i).dx;
+    Cdev_i = Cdev_i(:,1+(i-1)*4:i*4);
+    Cdev_i = 0.5*(Cdev_i+Cdev_i'); %keep the symmetric part (the model produces a non-symmetric capacitance matrix)
+    
+    Cdev_i(1,4) = Cdev_i(1,4) + Cdb(i);
+    Cdev_i(4,1) = Cdev_i(4,1) + Cdb(i);
+    
+    Cdev_i(3,4) = Cdev_i(3,4) + Csb(i);
+    Cdev_i(4,3) = Cdev_i(4,3) + Csb(i);
+    
+    Cdevs(:,:,i) = abs(Cdev_i);
+end
 
 
 end
