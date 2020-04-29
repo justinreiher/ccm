@@ -18,9 +18,9 @@ classdef coho_leaf< circuit
   properties (Constant)
     capPerUnit = 2e-9; 
   end
-  properties (GetAccess='private', SetAccess='private');
+  properties (GetAccess='public', SetAccess='private');
     subinfo; 
-    wid, rlen; 
+    params; 
   end 
 
   methods
@@ -28,15 +28,13 @@ classdef coho_leaf< circuit
     % name:    name of the circuit
     % wid:     wid of the device
     % rlen:    relative length compare with the mimimum length 
-    function this = coho_leaf(subinfo,name,wid,rlen)
-      if(nargin<3), error('must provide subinfo, name and wid'); end
-      if(nargin<4), rlen = 1; end 
+    function this = coho_leaf(subinfo,name,params)
+      if(nargin<3), error('must provide subinfo, name and parameters'); end
       this = this@circuit(name);
       this.subinfo.device= subinfo.device; 
       this.subinfo.I_factor = subinfo.I_factor(:); % make it col vector
       this.subinfo.C_factor = subinfo.C_factor(:);
-      this.wid = wid; 
-      this.rlen= rlen; 
+      this.params = params; 
     end
 
     % support simulation
@@ -56,7 +54,7 @@ classdef coho_leaf< circuit
     % NOTE: assume cap is linear with wid, independent of length? 
     function c = C(this,v,varargin) 
       if(nargin<2||isempty(v)), v = zeros(this.nodeNum,1); end
-      c = this.capPerUnit*this.wid*this.rlen; %% TODO: check if it's correct? 
+      c = this.capPerUnit*this.params.wid*this.params.rlen; %% TODO: check if it's correct? 
       c = repmat(c,this.nodeNum,size(v,2)); % each col for all nodes
       factor = repmat(this.subinfo.C_factor,1,size(c,2));
       c = c.*factor; 
@@ -70,7 +68,7 @@ classdef coho_leaf< circuit
     % v is Vx1; didv is NxN 
     function didv = dIdV(this,v,varargin) 
       assert(size(v,2)==1)
-      didv = interp_device_jac(this.subinfo.device,v,this.wid,this.rlen); 
+      didv = interp_device_jac(this.subinfo.device,v,this.param.wid,this.param.rlen); 
       didv = repmat(didv',this.nodeNum,1); % didv(i,j) = dI_i/dV_j 
       factor = repmat(this.subinfo.I_factor,1,size(didv,2));
       didv = didv.*factor;
@@ -102,6 +100,9 @@ classdef coho_leaf< circuit
 
   methods(Static)
     function I = I_objs(Objs,V,varargin)
+      % mrg: N = number of terminal per device;
+      %      P = number of phase-space points at which to evaluate the current;
+      %      K = number of devices with this device model
       [N,P,K] = size(V); assert(length(Objs)==K);
       device = Objs{1}.subinfo.device; I_factor = Objs{1}.subinfo.I_factor;
       % collect all width/rlength
