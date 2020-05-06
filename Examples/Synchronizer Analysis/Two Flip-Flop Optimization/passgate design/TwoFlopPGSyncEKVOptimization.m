@@ -30,8 +30,10 @@ uNodes = [synch.cctPath.PGFF_1.PGL_0.q,...
 uVcrit(uNodes) = [1,-1];
 
 transistorNumbering = 1:1:numTx;
-nDevices = [1,3,5,7,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41];
-pDevices = [2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42];
+%       bufferInv    Master flip-flop           Slave flip-flop
+%                 latch0        latch1          latch2           latch3
+nDevices = [1, 3,5,7,9,11,  13,15,17,19,21,   23,25,27,29,31, 33,35,37,39,41];
+pDevices = [2, 4,6,8,10,12, 14,16,18,20,22,   24,26,28,30,32, 34,36,38,40,42];
 transistorWidths = ones(numTx,1)*nomWidth;
 scale = (sum(ones(1,numTxRobust)*minWidth*4))/(sum(transistorWidths));
 transistorWidths = scale*transistorWidths;
