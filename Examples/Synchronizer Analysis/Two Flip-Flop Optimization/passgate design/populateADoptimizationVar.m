@@ -34,15 +34,6 @@ offsetP = length(dev_indP)-1;
 
 AD_f = hessianinit([voltageState;nDevices(dev_indN)';pDevices(dev_indP)']);
 
-vState = AD_f(1:length(voltageState));
-buffN   = AD_f(offsetV+1);
-latchN  = AD_f(offsetV+2:offsetN);
-buffP   = AD_f(offsetN + 1);
-latchP  = AD_f(offsetN+2:end);
-
-syncN = [buffN;latchN;latchN;latchN;latchN];
-syncP = [buffP;latchP;latchP;latchP;latchP];
-
 syncState = diag(ones(1,length(voltageState)));
 
 bufferN = 1;
