@@ -494,7 +494,10 @@ classdef testbench < handle
         cct = this.circuit;
         cctMap = cct.maps;
         
-        if(nargin < 3) v = this.simVoltage'; end
+        if(nargin < 2) 
+            v = this.simVoltage';
+            time = this.simTime';
+        end
         
         if(length(v(:,1)) ~= cct.nodeNum)
             v = this.vfull(time,v);

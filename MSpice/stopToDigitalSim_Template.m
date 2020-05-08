@@ -8,6 +8,9 @@
 % and how they want to encorporate that into the ode solver.
 
 function [value,isterminal,direction] = stopToDigitalSim(t,Vin,vDot,digitalSimOptions)
- 
- 
- end
+
+    value = -1;
+    isterminal = 0;
+    direction = 1;
+
+end
