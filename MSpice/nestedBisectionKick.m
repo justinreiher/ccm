@@ -245,7 +245,7 @@ classdef nestedBisectionKick < nestedBisection
                     t = tBeforeKick;
                     if(tBeforeKick(end) >= kickTime)
                         icCont = reshape(vBeforeKick(end,:),[numStatesPerCCT, this.tbOptions.numParallelCCTs]);
-                        icCont(kickNodes,:) = kickPercentage*icCont(kickNodes,:);
+                        icCont(kickNodes,:) = kickPercentage.*icCont(kickNodes,:);
                         icCont = reshape(icCont,[1, numStatesPerCCT*this.tbOptions.numParallelCCTs]);
                         [tAfterKick,vAfterKick] = integrator(@(tAfterKick,vAfterKick)(this.dV_ode(tAfterKick,vAfterKick)),[kickTime,stopTime], icCont,opts);
                         v_ode = [vBeforeKick;vAfterKick];
