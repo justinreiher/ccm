@@ -140,7 +140,7 @@ classdef nestedBisectionKick < nestedBisection
     % Functions for simulation
     
     % This function simulate the circuit
-    function [bisectionRuns] = simulate(this,filename,tspan,tCrit,kickData,v0,opts)
+    function [bisectionRuns] = simulate(this,filename,tspan,tCrit,kickData,v0)
         
         if(ischar(filename)||isstring(filename))
             fprintf('starting nested bisection and saving data to filename: %s ...\n',filename);
@@ -166,14 +166,10 @@ classdef nestedBisectionKick < nestedBisection
             v0 = zeros(n,1); % set the others to 0
             v0(v00{1}) = v00{2};
         end
-        % Integrator
-        %set the default integrator options if none are specified
-        if(nargin < 7), opts = this.tbOptions.integratorOptions; end
-        if(isfield('Integrator', opts))
-            integrator = opts.Integrator;
-        else
-            integrator = this.tbOptions.integrator;
-        end
+        % Integrator options
+        opts = this.tbOptions.integratorOptions;
+        integrator = this.tbOptions.integrator;
+      
         
         % simulate ODE nodes
         isOde = ~this.is_src;
