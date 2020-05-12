@@ -378,7 +378,7 @@ classdef nestedBisectionAnalysis < testbench
                 tbOptions = struct('capModel','full','capScale',1e10,'vdd',1.0,'temp',298,'numParallelCCTs',10,...
                     'stepOut',1,'polyFitDegree',3,'polyFitError',0.5,'isAD',true,'transSettle',1e-10,...
                     'plotOptions',false,'integratorOptions',integratorOptions,'clockEdgeSettings',clkEdgeSettings,...
-                    'digitalSimOptions',digitalSimOptions,...
+                    'digitalSimOptions',digitalSimOptions,'integrator',@ode45,...
                     'betaSimOptions',betaSimOptions,'integratorOptionsBeta',integratorOptionsBeta,'debug',false);%'tCritSettings',tCritSettings,
             end
             
@@ -419,7 +419,7 @@ classdef nestedBisectionAnalysis < testbench
         % nested bisection run. The user provides the critical time at which
         % the design needs to have settled by, the unit vector which selects
         % the nodes that are sensitive to the resolution of metastability.
-        function [t,lambda] = bisectionAnalysis(this,filename,bisectionData,uVcrit,tCrit,opts)
+        function [t,lambda] = bisectionAnalysis(this,filename,bisectionData,uVcrit,tCrit)
             %get the last settle high and settle low data transitions and take
             %the mid point. (these should be the same because by this point in
             %the bisection algorithm when the data transition occured should be
@@ -460,17 +460,11 @@ classdef nestedBisectionAnalysis < testbench
             numDevNodes = numDevN_nodes+numDevP_nodes;
             
             
-            % Integrator
-            %set the default integrator options if none are specified
-            if(nargin < 6)
-                opts = this.tbOptions.integratorOptions;
-                optsBeta = this.tbOptions.integratorOptionsBeta;
-            end
-            if(isfield('Integrator', opts))
-                integrator = opts.Integrator;
-            else
-                integrator = @ode45;
-            end
+            % Integrator options
+            opts = this.tbOptions.integratorOptions;
+            optsBeta = this.tbOptions.integratorOptionsBeta;
+            integrator = this.tbOptions.Integrator;
+
             
             indAnalysis = (t >= t0);
             t = t(indAnalysis);
