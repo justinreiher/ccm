@@ -370,7 +370,7 @@ classdef nestedBisectionAnalysis < testbench
                 
                 clkEdgeSettings = struct('low',0.48,'high',0.52,'clkEdgeSpread',20e-12,'numberOfEdges',1);
                 
-                tCritSettings   = struct('threshold',1e-2);
+                %tCritSettings   = struct('threshold',1e-2);
                 
                 digitalSimOptions = struct('vdd',1.0,'minSimTime',6e-10,'threshold',0.1,...
                     'stopGain',30);
@@ -378,8 +378,8 @@ classdef nestedBisectionAnalysis < testbench
                 tbOptions = struct('capModel','full','capScale',1e10,'vdd',1.0,'temp',298,'numParallelCCTs',10,...
                     'stepOut',1,'polyFitDegree',3,'polyFitError',0.5,'isAD',true,'transSettle',1e-10,...
                     'plotOptions',false,'integratorOptions',integratorOptions,'clockEdgeSettings',clkEdgeSettings,...
-                    'tCritSettings',tCritSettings,'digitalSimOptions',digitalSimOptions,...
-                    'betaSimOptions',betaSimOptions,'integratorOptionsBeta',integratorOptionsBeta,'debug',false);
+                    'digitalSimOptions',digitalSimOptions,...
+                    'betaSimOptions',betaSimOptions,'integratorOptionsBeta',integratorOptionsBeta,'debug',false);%'tCritSettings',tCritSettings,
             end
             
             if(length(ports)~=length(sources))
@@ -882,7 +882,7 @@ classdef nestedBisectionAnalysis < testbench
             numNodesPerCCT  = this.tbOptions.numNodes - length(this.sources);
             output = this.outputNode;
             alphaRef = linspace(0,1,numParallelCCTs);
-            deltaV = this.tbOptions.tCritSettings.threshold;
+         %   deltaV = this.tbOptions.tCritSettings.threshold;
             
             
             %%%%%%
