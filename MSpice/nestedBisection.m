@@ -380,7 +380,7 @@ classdef nestedBisection < testbench
             %find the index at which the input source is evaluated at
             this.inputSourceIndex = this.circuit.find_port_index(dinSource{1});
             %take the uVcrit vector and restrict it to state variables only.
-            %      tbOptions.tCritSettings.uVcrit = tbOptions.tCritSettings.uVcrit - length(this.sources);
+            %      tbOptions..uVcrit = tbOptions..uVcrit - length(this.sources);
             
             this.setTestbenchOptions(tbOptions);
             
