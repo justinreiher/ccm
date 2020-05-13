@@ -22,7 +22,7 @@ classdef vsin < coho_vsrc
     % v_p - v_m
     function v = V(this,t,varargin) % t can be a vector
       t = reshape(t,[],1);
-      v = this.A*(sin(this.w*t+this.phi)+this.b); 
+      v = this.A*(sin(this.w*t+this.phi))+this.b; 
     end
   end
 end
