@@ -463,7 +463,7 @@ classdef nestedBisectionAnalysis < testbench
             % Integrator options
             opts = this.tbOptions.integratorOptions;
             optsBeta = this.tbOptions.integratorOptionsBeta;
-            integrator = this.tbOptions.Integrator;
+            integrator = this.tbOptions.integrator;
 
             
             indAnalysis = (t >= t0);
