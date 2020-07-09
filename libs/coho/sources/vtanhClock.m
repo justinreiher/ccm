@@ -37,7 +37,7 @@ classdef vtanhClock < coho_vsrc
       if(this.holdHigh)
           v = v+(this.A+this.b)*heaviside(-t+this.delay);
       end
-      v = v+(-this.A+this.b)*heaviside(-t+this.delay);
+      
     end
     
     function params = getParams(this)

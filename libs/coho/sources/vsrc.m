@@ -9,7 +9,8 @@ classdef vsrc < coho_vsrc
     function this = vsrc(name,v,ctg)
       if(nargin<2), error('not enough parameters'); end
       if(nargin<3||isempty(ctg)), ctg = true; end
-      this = this@coho_vsrc(name,ctg);
+      params = struct('voltage',v);
+      this = this@coho_vsrc(name,ctg,params);
       this.vol = v;
       this.finalize;
     end

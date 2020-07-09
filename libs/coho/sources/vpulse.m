@@ -21,8 +21,7 @@ classdef vpulse < coho_vsrc
       if(numel(r)~=2), error('r must be [low,high]'); end;
       if(numel(p)~=4), error('p must be [rt,ht,ft,lt]'); end;
       if(~all(p>0)), error('p must be positive'); end;
-
-      this = this@coho_vsrc(name,ctg);
+      
       lo = min(r); hi = max(r);
       rt = p(1); ht = p(2); ft = p(3); lt=p(4);
       % piece-wise linear: time,rate,value 
@@ -31,6 +30,11 @@ classdef vpulse < coho_vsrc
              [rt+ht,     (lo-hi)/ft,  hi];  % fall 
              [rt+ht+ft,  0,           lo]   % low 
          ];
+
+      params = struct('pwl',pwl,'period',sum(p),'delay',d);
+
+      this = this@coho_vsrc(name,ctg,params);
+
       this.pwl = pwl; this.period = sum(p); this.delay = d;
       this.finalize;
     end

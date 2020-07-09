@@ -12,8 +12,10 @@ classdef vsin < coho_vsrc
       if(nargin<4||isempty(b)), b=0; end;
       if(nargin<5||isempty(A)), A=1; end;
       if(nargin<6||isempty(ctg)), ctg=true; end;
+      
+      params = struct('amplitude',A,'frequency',w,'phaseShift',phi,'offset',b)
 
-      this = this@coho_vsrc(name,ctg);
+      this = this@coho_vsrc(name,ctg,params);
       this.w = w; this.phi = phi; 
       this.b = b; this.A = A; 
       this.finalize;
@@ -22,7 +24,7 @@ classdef vsin < coho_vsrc
     % v_p - v_m
     function v = V(this,t,varargin) % t can be a vector
       t = reshape(t,[],1);
-      v = this.A*(sin(this.w*t+this.phi))+this.b; 
+      v = this.A*sin(this.w*t+this.phi)+this.b; 
     end
   end
 end
