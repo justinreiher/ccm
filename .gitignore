@@ -1,2 +1,4 @@
 doc/texManual
 *.asv
+Examples
+*.mat
