@@ -510,20 +510,20 @@ classdef nestedBisectionAnalysis < testbench
             beta_t = @(t) ppval(beta,t);
             toc()
             
-            fprintf('starting computation for w(t) = ||uVcrit*S(t)||...\n');
+            fprintf('starting computation for u(t) = uVcrit*S(t,tcrit)/||uVcrit*S(t,tCrit)||...\n');
             tic()
-            [tw,w_ode] = integrator(@(tw,w_ode)(this.dwdt_ode(Jac_t(tw),w_ode)), [stopTime startTime],uVcrit,opts);
+            [tu,u_ode] = integrator(@(tw,w_ode)(this.dudt_ode(Jac_t(tw),w_ode)), [stopTime startTime],uVcrit,opts);
             toc()
-            w = w_ode';
-            [~,iter] = size(w);
-            wNorm = zeros(numStates,iter);
+%             w = w_ode';
+%             [~,iter] = size(w);
+%             wNorm = zeros(numStates,iter);
+%             
+%             for i = 1:iter
+%                 wNorm(:,i) = w(:,i)/norm(w(:,i));
+%             end
             
-            for i = 1:iter
-                wNorm(:,i) = w(:,i)/norm(w(:,i));
-            end
-            
-            wNormt = spline(tw,wNorm);
-            wNorm_t = @(t) ppval(wNormt,t);
+            uNormt = spline(tu,u_ode');
+            u_t = @(t) ppval(uNormt,t);
             
             [~,iter] = size(t);
             lambda = zeros(1,iter);
@@ -532,12 +532,12 @@ classdef nestedBisectionAnalysis < testbench
             tic()
             for i = 1:iter
                 t_sample = t(i);
-                [g,dgdt,lambda(i)] = this.gainSync(wNorm_t(t_sample),Jac_t(t_sample),...
+                [g,dgdt,lambda(i)] = this.gainSync(u_t(t_sample),Jac_t(t_sample),...
                     beta_t(t_sample),dhda_t(t_sample));
             end
             toc()
             save(strcat(filename,'.mat'),'t','dataTransition','splMeta',...
-                'beta_t','Jac_t','dhda_t','wNorm_t','lambda','g','dgdt');
+                'beta_t','Jac_t','dhda_t','u_t','lambda','g','dgdt');
         end % analysis
         
         % This function computes the time derivative of beta
@@ -547,9 +547,9 @@ classdef nestedBisectionAnalysis < testbench
         end
         
         % This function computes the time derivative of u(t)
-        function dwdt = dwdt_ode(~,Jac,w_ode)
-            dwdt = -w_ode'*Jac;
-            dwdt = dwdt';
+        function dudt = dudt_ode(~,Jac,u_ode)
+            dudt = (u_ode'*Jac*u_ode)*u_ode'-u_ode'*Jac;
+            dudt = dudt';
         end
         
         % This function computes the synchronizer gain and instantaneous

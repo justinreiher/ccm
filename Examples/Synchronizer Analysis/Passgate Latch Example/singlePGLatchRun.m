@@ -59,5 +59,5 @@ set(gca,'fontsize',18)
 
 gPgLatch = zeros(1,length(tpgLatch));
 for i = 1:length(tpgLatch)
-    gPgLatch(i) = wNorm_t(tpgLatch(i))'*beta_t(tpgLatch(i));
+    gPgLatch(i) = u_t(tpgLatch(i))'*beta_t(tpgLatch(i));
 end
