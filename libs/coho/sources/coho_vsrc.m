@@ -1,10 +1,10 @@
 % ctg: m terminal connect to ground
 classdef coho_vsrc < circuit
   properties (GetAccess='public', SetAccess='private');
-    p,m;
+    p,m; model; params;
   end
   methods
-    function this = coho_vsrc(name,ctg)
+    function this = coho_vsrc(name,ctg,params)
       if(nargin<1||isempty(name)), error('not enough parameter'); end
       if(nargin<2||isempty(ctg)), ctg = true; end
       this = this@circuit(name);
@@ -12,6 +12,8 @@ classdef coho_vsrc < circuit
       if(~ctg)
         this.m = this.add_port(node('minus')); 
       end
+      this.model = 'default';
+      this.params = params;
     end
     function is = is_vsrc(this)
       is = true;
