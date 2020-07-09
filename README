@@ -8,23 +8,16 @@ Coho-Model(CCM): Coho Circuit Modeling Tool
   The nested bisection algorithm has been included as specific testbench that can be instantiated for synchronizer circuits to simulate metastable trajectories upto a user specified time. (examples and documentation provided)
   
   In addition an analysis testbench can be created to determine a synchronizer's gain, instantaneous gain and gradient calculation of the gain with respect to the transistor widths. In order to make use of the analysis tools, the IntLAB toolbox is required found at: http://www.ti3.tu-harburg.de/intlab/
+
+Details on obtaining and paying for the toolbox can be found there.
+
+Without the IntLAB toolbox you can still simulate circuits and run the nested bisection algorithm described in manual.v2.pdf
   
   
 
 FAQ: 
 =====================
 1. How to install Coho-Model
-   install.sh
-=====================
-2. How to use Coho-Model, small example
-   ccm_open
-   <users' code>
-   ccm_close
-=====================
-3. Any more examples ?
-   ./example/
-   ./MSpice/test/
-   ./lib/coho/test/
-=====================
-4. More documents
-   ./doc
+   clone the repo and add the path and subfolders to your MATLAB environment
+2. Tutorials and example descriptions found in the manual:
+	/doc/manual.v2.pdf
