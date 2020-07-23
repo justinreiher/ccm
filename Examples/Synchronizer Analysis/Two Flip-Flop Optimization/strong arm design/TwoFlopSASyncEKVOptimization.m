@@ -19,8 +19,8 @@ minWidth = 200e-7;
 numTx = 40;
 
 uVcrit = zeros(1,24);
-uVcrit(sync.cctPath.saFF_1.s) = 1;
-uVcrit(sync.cctPath.saFF_1.r) = -1;
+uVcrit(sync.cctPath.saFF_1.s) = -1;
+uVcrit(sync.cctPath.saFF_1.r) = 1;
 transistorNumbering = 1:1:numTx;
 nDevices = [1,3, 5,7, 9,10,11,12, 15,16,19,20   23,25, 27,28,29,30, 33,34,37,38];
 pDevices = [2,4, 6,8, 13,14,      17,18,21,22,  24,26, 31,32,       35,36,39,40];
@@ -59,7 +59,10 @@ saveTeola = zeros(1,1000);
 
 txWidthsSave = zeros(length(transistorWidths),1000);
 txWidthsSave(:,i) = transistorWidths;
-while(norm(transistorWidths-transistorWidthPrev) >= norm(wStart)/(numTx)*tol)
+gradientSave = zeros(length(transistorWidths),1000);
+gradientRawSave = zeros(length(transistorWidths),1000);
+
+while(norm(transistorWidths-transistorWidthPrev) >= norm(wStart)/(numTx) || i < 3)
     close all
 
     sync = TWO_FLOP_STRONG_ARM_SYNC('sARMS ',transistorWidths,1);
@@ -77,26 +80,20 @@ while(norm(transistorWidths-transistorWidthPrev) >= norm(wStart)/(numTx)*tol)
     load(strcat('twoFlop_SA_SyncAnalysis_',num2str(i),'.mat'))
     teola = t(end);
     saveTeola(i) = teola;
-    gSign = sign(g);
-    if(gSign > 0 )
-        gSign = -1;
-    else
-        gSign = 1;
-    end
     fprintf('Current tCrit: %d\n',saveTeola(i));
-    dGdwRaw = nbAnalysis.dGdw(splMeta,Jac_t,dhda_t,dataTransition,beta_t,[t(1),tCrit],uVcrit);
+    dGdwRaw = nbAnalysis.dGdw(splMeta,Jac_t,dhda_t,dataTransition,u_t,beta_t,g_t,[t(1),teola],t,strcat('gradientData_',num2str(i)));
     
     dGdw = zeros(numTx,1);
     dGdw(nDevices) = dGdwRaw(1:length(nDevices));
     dGdw(pDevices) = dGdwRaw(length(nDevices)+1:end);
     
-%     signGrad = sign(dGdw);
-%     log_dGdw = log(abs(dGdw));
-%     dGdw = -gSign*signGrad.*log_dGdw;
-    dGdw = 1/g*dGdw;
+    logdGdw = -1/g_t(teola)*dGdw;
+    %
+    logdGdw(lastLatch) = 0;
+    gradientRawSave(:,i) = logdGdw;
     
     r = ones(size(transistorWidths))/sqrt(length(transistorWidths));
-    dgdwFix = dGdw - r.*(r.*dGdw);
+    dgdwFix = logdGdw - r.*(r.*logdGdw);
     dwds = wMin.*(1+s./sqrt(s.^2+4))/2;
     dGds = dgdwFix.*dwds;
     
@@ -106,12 +103,13 @@ while(norm(transistorWidths-transistorWidthPrev) >= norm(wStart)/(numTx)*tol)
     dGdsPrev = dGds;
     sPrev = s;
     
-    s = s + gamma*dGds;
-    
+    s = s - 0.1*gamma*dGds;
     widBudget = @(sfix) sum(finv_s(s + sfix*ones(size(s)))) - totalWidth;
     sfix = fzero(widBudget,1);
     
-    transistorWidths = finv_s(s+sfix*ones(size(s)));
+    s = s + sfix*ones(size(s));
+    
+    transistorWidths = finv_s(s);
     
     save(strcat('gradientState_',num2str(i)),'transistorWidths','transistorWidthPrev','s','sPrev','dGds','dGdwRaw','dGdw','gamma')
 
@@ -124,5 +122,5 @@ ind = nnz(saveTeola);
 tCrits = saveTeola(1:ind);
 txWidths = txWidthsSave(:,1:ind);
 
-save('twoFlopSynchronizerTxWidths','tCrits','txWidths');
+save('twoFlopSynchronizerTxWidths','saveTeola','txWidths','gradientSave','gradientRawSave');
 

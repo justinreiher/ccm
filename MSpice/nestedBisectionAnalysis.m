@@ -478,7 +478,7 @@ classdef nestedBisectionAnalysis < testbench
             C_Dev = zeros([numDevNodes*totalNumStates,iter]);
             vdot = zeros([numStates,iter]);
             dhda = zeros([numStates,iter]);
-            fprintf('starting computation for Jac(t) and dh(t)/da...\n')
+            fprintf('Pre-computing for Jac(t) and dh(t)/da...\n')
             tic()
             for i = 1:iter
                 vSample = splMeta(t(i));
@@ -501,7 +501,7 @@ classdef nestedBisectionAnalysis < testbench
             startTime = t0;
             stopTime = tspan(2);
             
-            fprintf('starting computation for beta(t)...\n')
+            fprintf('Computing beta(t)...\n')
             tic()
             [tb, beta_ode] = integrator(@(tb, beta_ode)(this.dbeta_ode(Jac_t(tb),dhda_t(tb),beta_ode)), [startTime stopTime], beta0, optsBeta);
             beta_ode = beta_ode';
@@ -510,7 +510,7 @@ classdef nestedBisectionAnalysis < testbench
             beta_t = @(t) ppval(beta,t);
             toc()
             
-            fprintf('starting computation for u(t) = uVcrit*S(t,tcrit)/||uVcrit*S(t,tCrit)||...\n');
+            fprintf('Computing u(t) = uVcrit*S(t,tcrit)/||uVcrit*S(t,tCrit)||...\n');
             tic()
             [tu,u_ode] = integrator(@(tw,w_ode)(this.dudt_ode(Jac_t(tw),w_ode)), [stopTime startTime],uVcrit,opts);
             toc()
@@ -527,17 +527,21 @@ classdef nestedBisectionAnalysis < testbench
             
             [~,iter] = size(t);
             lambda = zeros(1,iter);
-            gamma = zeros(1,iter);
-            fprintf('starting computation for g(t) and dg(t)/dt\n');
+            g = zeros(1,iter);
+            fprintf('Computing g(t) and dg(t)/dt\n');
             tic()
             for i = 1:iter
                 t_sample = t(i);
-                [g,dgdt,lambda(i)] = this.gainSync(u_t(t_sample),Jac_t(t_sample),...
+                [g(i),dgdt,lambda(i)] = this.gainSync(u_t(t_sample),Jac_t(t_sample),...
                     beta_t(t_sample),dhda_t(t_sample));
             end
             toc()
+            
+            gInterp = pchip(t,g);
+            g_t = @(t) ppval(gInterp,t);
+            fprintf('Synchronizer gain %d\n',g(end));
             save(strcat(filename,'.mat'),'t','dataTransition','splMeta',...
-                'beta_t','Jac_t','dhda_t','u_t','lambda','g','dgdt');
+                'beta_t','Jac_t','dhda_t','u_t','g_t','lambda','g','dgdt');
         end % analysis
         
         % This function computes the time derivative of beta
@@ -565,19 +569,10 @@ classdef nestedBisectionAnalysis < testbench
         % respect to the transistor widths at the critical time tCrit.
         %
         %   TODO: create a Backward AD version of this function call
-        function [dGdw_tCrit,gamma,t] = dGdw(this,traj_t,Jac_t,dhda_t,dataTransition,beta_t,timeSpan,uVcrit)
+        function [dGdw_tCrit,dgdw,t] = dGdw(this,meta_t,Jac_t,dfd_tin_t,tin,u_t,beta_t,g_t,timeSpan,timePoints,filename)
             
-            if(length(uVcrit) == this.circuit.nodeNum)
-                iss = this.is_src;
-                uVcrit = uVcrit(~iss);
-                %ensures normalization
-                uVcrit = uVcrit/norm(uVcrit);
-            end
+            %get circuit details
             numStates = this.circuit.nodeNum - length(this.sources);
-            if(length(uVcrit) ~= numStates)
-                error('incompatible uVcrit vector')
-            end
-
             deviceMap = this.circuit.getCircuitMap;
             numUniqueElements = length(deviceMap);
             wid = cell(1,numUniqueElements);
@@ -587,18 +582,89 @@ classdef nestedBisectionAnalysis < testbench
             
             [~,numAD_var] = populateADoptimizationVar(1,wid{1},wid{2});
             
-            gamma0 = zeros(numStates,numAD_var);
-            fprintf('Starting computation of dG/dw...\n') 
+            uTdJdw_raw = zeros(numStates*numAD_var,length(timePoints));
+            uTddfdwdx_raw  = zeros(numAD_var,length(timePoints));
+            betaTdJdw_raw = zeros(numStates*numAD_var,length(timePoints));
+            ddfdwd_tin_raw = zeros(numStates*numAD_var,length(timePoints));
+            fprintf('Pre-computing uT dJdw and uT ddfdwd_tin... \n')
             tic()
-            [t,gamma] = ode45(@(t,gamma) this.gamma_ode(t,traj_t(t),Jac_t(t),dhda_t(t),beta_t(t),gamma,dataTransition),timeSpan,gamma0);
-            dGdw_tCrit = expandW((uVcrit*reshape(gamma(end,:),numStates,numAD_var))');
+            for i = 1:length(timePoints)
+                t = timePoints(i);
+                [uTdJdw_i,uTddfdwd_tin_i,dJdwBeta_i,ddfdwd_tin_i] = this.preComputeDerivatives(t,meta_t(t),u_t(t),Jac_t(t),dfd_tin_t(t),tin,beta_t(t));
+                uTdJdw_raw(:,i) = reshape(uTdJdw_i,[],1);
+                uTddfdwdx_raw(:,i) = uTddfdwd_tin_i;
+                betaTdJdw_raw(:,i) = reshape(dJdwBeta_i,[],1);
+                ddfdwd_tin_raw(:,i) = reshape(ddfdwd_tin_i,[],1);
+            end
             toc()
+            
+            betaTdJdw = pchip(timePoints,betaTdJdw_raw);
+            betaTdJdw_t = @(t) reshape(ppval(betaTdJdw,t),numStates,numAD_var);
+            
+            ddfdwd_tin = pchip(timePoints,ddfdwd_tin_raw);
+            ddfdwd_tin_t = @(t) reshape(ppval(ddfdwd_tin,t),numStates,numAD_var);
+            
+            dBetadw0 = zeros(numStates,numAD_var);
+            
+            [t_b,dBetadw_raw] = ode45(@(t,dBetadw) this.dBetadw_ode(dBetadw,Jac_t(t),betaTdJdw_t(t),ddfdwd_tin_t(t)),timeSpan,dBetadw0);
+            
+            dBetadw = pchip(t_b,dBetadw_raw');
+            dBetadw_t = @(t) reshape(ppval(dBetadw,t),numStates,numAD_var);
+            
+            uTdJdw = pchip(timePoints,uTdJdw_raw);
+            uTdJdw_t = @(t) reshape(ppval(uTdJdw,t),numStates,numAD_var);
+            
+            uTddfdwdx = pchip(timePoints,uTddfdwdx_raw);
+            uTddfdwd_tin_t = @(t) ppval(uTddfdwdx,t);
+           
+            dudw0 = zeros(numAD_var,numStates);
+            
+            fprintf('Computing du/dw...\n')
+            tic()
+            [t_u,duTdw_raw] = ode45(@(t,dudw) this.dudw_ode(u_t(t),Jac_t(t),uTdJdw_t(t),dudw),[timeSpan(2),timeSpan(1)],dudw0);
+            toc()
+            
+            duTdw = pchip(t_u,duTdw_raw');
+            duTdw_t = @(t) reshape(ppval(duTdw,t),numAD_var,numStates);
+            
+            dgdw0 = zeros(numAD_var,1);
+            fprintf('Computing dg/dw...\n')
+            tic()
+            for i = 1:length(t_b)
+                t_i = t_b(i);
+                dgdw_B(:,i) = duTdw_t(t_i)*beta_t(t_i) + (u_t(t_i)'*dBetadw_t(t_i))';
+            end
+            
+
+            [t,dgdw_g] = ode45(@(t,dgdw) this.dgdw_ode(u_t(t),Jac_t(t),g_t(t),dfd_tin_t(t),duTdw_t(t),uTdJdw_t(t),uTddfdwd_tin_t(t),dgdw),timeSpan,dgdw0);
+            dGdw_tCrit = expandW(dgdw_B(:,end));
+            toc()
+            
+            save(filename,'uTdJdw_raw','uTddfdwdx_raw','betaTdJdw_raw','ddfdwd_tin_raw','t_b','dBetadw_raw','dBetadw_t','duTdw_raw','t_u','uTdJdw_t','uTddfdwd_tin_t','duTdw_t','dgdw_B','dgdw_g','t')
+        end
+        
+        % Computes the time derivative of partial g(t) / partial w
+        function dgdw_dot = dgdw_ode(~,u,J,g,dfd_tin,dudw,uTdJdw,uTddfdwd_tin,dgdw)
+            dgdw_dot = (dudw*J*u +uTdJdw'*u+ (u'*J*dudw')')*g + u'*J*u*dgdw + dudw*dfd_tin + uTddfdwd_tin;
+        end
+        
+        % Computes the time derivative of partial u(t) / partial w
+        function dudw_dot = dudw_ode(this,u,J,uTdJdw,dudw)
+            
+            offset = length(this.sources);
+            totalNumNodes = this.circuit.nodeNum;
+            numStates = totalNumNodes - offset;
+            
+            duTdw = reshape(dudw,[],numStates);
+            dudw_dot = duTdw*J*(u*u') + uTdJdw'*(u*u') + (u'*J*duTdw')'*u'+(u'*J*u)*duTdw - duTdw*J - uTdJdw';
+            dudw_dot = reshape(dudw_dot,[],1);
+        
         end
         
         % Computes the time derivative of Gamma which is the time
         % derivative of the partial derivative of beta with respect to the
         % transistor widths of the synchronizer design
-        function gammaDot = gamma_ode(this,t,traj,Jac,dhda,beta,gamma,dataTransition)
+        function [uTdJdw,uTddfdwd_tin,dJdw_beta,ddfdwd_tin]= preComputeDerivatives(this,t,traj,u,Jac,dfd_tin,dataTransition,beta)
             
             vfull = this.vfull(t,dataTransition,traj);
             synchronizerCCTMapping = this.synchronizerCCTMap;
@@ -740,22 +806,22 @@ classdef nestedBisectionAnalysis < testbench
             
             C = C(~isSource);
             f = I./C;
-            
+            uTCinv = u/C;
             offset = length(this.sources);
             totalNumNodes = this.circuit.nodeNum;
             numStates = totalNumNodes - offset;
             alphaSource = this.inputSourceIndex;
             
-            gamma = reshape(gamma,numStates,numAD_w);
-            
-            df_dwda = zeros(numStates,numAD_w);
-            betaJac_fw = zeros(numStates,numAD_w);
+            ddf_dwdt_in = zeros(numStates,numAD_w);
+            uTdJdw = zeros(numStates,numAD_w);
+            dJdw_beta = zeros(numStates,numAD_w);
             for i = 1:numStates
-                df_dwda_i = f(i).hx;
-                df_dwda(i,:) = df_dwda_i(totalNumNodes+1:end,alphaSource);
-                betaJac_fw(i,:) = df_dwda_i(totalNumNodes+1:end,offset+1:totalNumNodes)*beta;
+                ddf = f(i).hx;
+                ddf_dwdt_in(i,:) = ddf(totalNumNodes+1:end,alphaSource);
+                uTdJdw(i,:) = uTCinv*ddf(totalNumNodes+1:end,offset+1:totalNumNodes);
+                dJdw_beta(i,:) = ddf(totalNumNodes+1:end,offset+1:totalNumNodes)*beta;
             end
-            nonHomogeneous = df_dwda+betaJac_fw;
+            uTddfdwd_tin = uTCinv*ddf_dwdt_in;
         else
             
             numDevices = length(widN) + length(widP);
@@ -767,9 +833,7 @@ classdef nestedBisectionAnalysis < testbench
             isSource = this.is_src;
             I = Idev(~isSource);
             dI = I.dx;
-            dIdx = dI(:,1+offset:totalNumNodes);
-            dIdw = dI(:,1+totalNumNodes:end);
-            dIda = dI(:,alphaSource);
+            
             %C here is the diagonal matrices of the sparse matrix I want to have,
             %MATLAB doesn't offer a convienient way to create a block
             %diagonal sparse matrix other than by the following:
@@ -778,88 +842,124 @@ classdef nestedBisectionAnalysis < testbench
             C = C(~isSource,~isSource);
             Cap = C.x;
             dC  = C(:).dx; %all the first derivatives for C
-            dCda = reshape(dC(:,alphaSource),numStates,numStates);
+            
+            %declare all the variables needed to compute:
+            %   u^T Cinv partial J / partial w
+            %   u^T Cinv partial f / partial w
+            %
+            % These quantities are needed to compute the gradient of the
+            % synchronizer gain with respect to the independent transistor
+            % width variables of the design.
+            
             f = Cap\I.x;
-            Cinv_dIdx_Beta = Cap\(dIdx*beta);
-            Cinv_dIdw      = Cap\dIdw;
-            Cinv_dIda      = Cap\dIda;
-            dCda_Cinv_dIdw = dCda*Cinv_dIdw;
-            Cinv_dCda_f    = Cap\(dCda*f);
-          
+            uTCinv = u'/Cap; %<- u^T*C^-1
+            
+            %variables for u^T partial J / partial w
+            uTCinv_dCdw_J = zeros(numStates,numAD_w);
+            uTCinv_ddCdwdx_f = zeros(numStates,numAD_w);
+            uTCinv_dCdx = zeros(numStates,numStates);
+            uTCinv_ddIdwdx = zeros(numStates,numAD_w);
+            
+            %variables for beta^T partial J / partial w
+            dCdw_J_beta = zeros(numStates,numAD_w);
+            dCdx_Cinv_F_beta = zeros(numStates,numAD_w);
+            ddCdwdx_f_beta = zeros(numStates,numAD_w);
+            ddIdwdx_beta = zeros(numStates,numAD_w);
+            
+            
+            %variables for u^T Cinv partial^2 f / partial w partial x
+            %uTCinv_dCdw_dfd_tin = zeros(1,numAD_w); no pre-allocation
+            %necessary
+            %uTCinv_ddCdwd_tin_f = zeros(1,numAD_w); no pre-allocation
+            %necessary
+            dCd_tin = reshape(dC(:,alphaSource),numStates,numStates);
+            uTCinv_dCd_tin = uTCinv*dCd_tin;
+            %uTCinv_ddIdwd_tin = zeros(1,numAD_w); no pre-allocation
+            %necessary
+            
+            %shared variables that appear in both equations
+            dCdw_f = zeros(numStates,numAD_w);
+            dIdw = dI(:,1+totalNumNodes:end);
+            
             
             %let try to be clever about this later, ouch though triple
             %loop...
             
-            dCdwdx_f = zeros(numStates,numStates,numAD_w);
-            dCdwda = zeros(numStates,numStates,numAD_w);
+            ddCdwdx_f = zeros(numStates,numStates,numAD_w);
+            ddCdwd_tin = zeros(numStates,numStates,numAD_w);
             
             for i = 1:numStates
                 for j = 1:numStates
                     capElement = C(i,j).hx;
-                    dCdwdx_f(i,j,:) = capElement(1+totalNumNodes:end,1+offset:totalNumNodes)*f;
-                    dCdwda(i,j,:) = capElement(1+totalNumNodes:end,alphaSource);
+                    ddCdwdx_f(i,j,:) = capElement(1+totalNumNodes:end,1+offset:totalNumNodes)*f;
+                    ddCdwd_tin(i,j,:) = capElement(1+totalNumNodes:end,alphaSource);
                 end
             end
             
-            dCdwdx_f_Beta = zeros(numStates,numAD_w);
-            dCdwda_f = zeros(numStates,numAD_w);
-
+            ddCdwd_tin_f = zeros(numStates,numAD_w);
+            dCdw_dfd_tin     = zeros(numStates,numAD_w);
+            
             for i = 1:numAD_w
-                dCdwdx_f_Beta(:,i) = dCdwdx_f(:,:,i)*beta;
-                dCdwda_f(:,i)      = dCdwda(:,:,i)*f;
-            end
-            %%% I think the above is correct
-            
-            gamma = reshape(gamma,numStates,numAD_w);
-            
-            dCdx_f = zeros(numStates,numStates);
-            dIdwdx_Beta = zeros(numStates,numAD_w);
-            dIdwda      = zeros(numStates,numAD_w);
-            for i = 1:numStates
-                dC_i = reshape(dC(:,i+offset),numStates,numStates);
-                dCdx_f(i,:) = dC_i*f;
-                ddI_i = I(i).hx;
-                dIdwdx_Beta(i,:) = ddI_i(1+totalNumNodes:end,1+offset:totalNumNodes)*beta;
-                dIdwda(i,:) = ddI_i(1+totalNumNodes:end,alphaSource);
-            end
-            
-            Cinv_dCdx_f_Beta = Cap\(dCdx_f*beta);
-            
-            dCdw_f = zeros(numStates,numAD_w);
-            dCdw_Cinv_dCdx_f_Beta = zeros(numStates,numAD_w);
-            dCdw_Cinv_dIdx_Beta  = zeros(numStates,numAD_w);
-            dCdw_Cinv_dCda_f     = zeros(numStates,numAD_w);
-            dCdw_Cinv_dIda       = zeros(numStates,numAD_w);
-            for i = 1:numAD_w
+                ddCdwd_tin_f(:,i) = ddCdwd_tin(:,:,i)*f;
+                uTCinv_ddCdwdx_f(:,i) = uTCinv*ddCdwdx_f(:,:,i);
+                ddCdwdx_f_beta(:,i) = ddCdwdx_f(:,:,i)*beta;
+                
                 dC_i = reshape(dC(:,i+totalNumNodes),numStates,numStates);
                 dCdw_f(:,i) = dC_i*f;
-                dCdw_Cinv_dCdx_f_Beta(:,i) = dC_i*Cinv_dCdx_f_Beta;
-                dCdw_Cinv_dIdx_Beta(:,i)   = dC_i*Cinv_dIdx_Beta;
-                dCdw_Cinv_dCda_f(:,i)      = dC_i*Cinv_dCda_f;
-                dCdw_Cinv_dIda(:,i)        = dC_i*Cinv_dIda;
+                dCdw_dfd_tin(:,i) = dC_i*dfd_tin;
+                uTCinv_dCdw_J(:,i) = uTCinv*dC_i*Jac;
+                dCdw_J_beta(:,i) = dC_i*Jac*beta;
             end
             
-            Cinv_dCdw_f = Cap \dCdw_f;
-            dCda_Cinv_dCdw_f = dCda*Cinv_dCdw_f;
-            dCdx_Cinv_dCdw_f_Beta = zeros(numStates,numAD_w);
-            dCdx_Cinv_dIdw_Beta   = zeros(numStates,numAD_w);
+            uTCinv_ddCdwd_tin_f = uTCinv*ddCdwd_tin_f;
             
+            F = Cap \ (dCdw_f - dIdw);
+            
+            %%% I think the above is correct
+      
+            ddIdwd_tin = zeros(numStates,numAD_w);
             for i = 1:numStates
                 dC_i = reshape(dC(:,i+offset),numStates,numStates);
-                dCdx_Cinv_dCdw_f_Beta(i,:) = beta'*dC_i*Cinv_dCdw_f;
-                dCdx_Cinv_dIdw_Beta(i,:)   = beta'*dC_i*Cinv_dIdw;
+                uTCinv_dCdx(i,:) = uTCinv*dC_i;
+                dCdx_Cinv_F_beta(i,:) = beta'*dC_i*F;
+                ddI_i = I(i).hx;
+                uTCinv_ddIdwdx(i,:) = uTCinv*ddI_i(1+offset:totalNumNodes,1+totalNumNodes:end);
+                ddIdwdx_beta(i,:) = ddI_i(1+totalNumNodes:end,1+offset:totalNumNodes)*beta;
+                ddIdwd_tin(i,:) = ddI_i(alphaSource,1+totalNumNodes:end);
             end
             
-            dJdw_Beta = (dCdw_Cinv_dCdx_f_Beta - dCdwdx_f_Beta + dCdx_Cinv_dCdw_f_Beta - dCdx_Cinv_dIdw_Beta - dCdw_Cinv_dIdx_Beta + dIdwdx_Beta);
-            dfdwda    = (dCdw_Cinv_dCda_f - dCdwda_f + dCda_Cinv_dCdw_f - dCda_Cinv_dIdw - dCdw_Cinv_dIda + dIdwda);
+            uTCinv_ddIdwd_tin = uTCinv*ddIdwd_tin;
+                        
+            
+            uTCinv_dCdw_dfd_tin = uTCinv*dCdw_dfd_tin;
+         
             
             
-            nonHomogeneous = Cap\(dJdw_Beta + dfdwda);
+            uTdJdw = -uTCinv_dCdw_J - uTCinv_ddCdwdx_f + uTCinv_dCdx*F+uTCinv_ddIdwdx;
+            dJdw_beta = Cap\(-dCdw_J_beta - ddCdwdx_f_beta + dCdx_Cinv_F_beta + ddIdwdx_beta);
+            
+            uTddfdwd_tin = -uTCinv_dCdw_dfd_tin - uTCinv_ddCdwd_tin_f + uTCinv_dCd_tin*F + uTCinv_ddIdwd_tin;
+            
+            ddfdwd_tin = Cap\(-dCdw_dfd_tin -ddCdwd_tin_f+dCd_tin*F + ddIdwd_tin);
+            
             
         end
         
-        gammaDot = Jac*gamma + nonHomogeneous;
-        gammaDot = reshape(gammaDot,[],1);
+        
+    end
+        
+    % Computes the time derivative of partial beta / partial w, the
+    % transistor widths of the synchronizer design
+    function dBetadw_dot = dBetadw_ode(this,dBetadw,J,betaTdJdw,ddfdwdtin)
+        offset = length(this.sources);
+        totalNumNodes = this.circuit.nodeNum;
+        numStates = totalNumNodes - offset;
+        
+        dBetadw = reshape(dBetadw,numStates,[]);
+        
+        dBetadw_dot = betaTdJdw + J*dBetadw + ddfdwdtin;
+        
+        dBetadw_dot = reshape(dBetadw_dot,[],1);
         
     end
         

@@ -15,6 +15,7 @@ slope = 1/timeSpan(2);
 gnd = vsrc('gnd',0,1);
 vdd = vsrc('vdd',1,1);
 din = vsrcLinear('din',slope,true);
+tbOptionsFull = struct('capModel','full','capScale',1,'vdd',1,'temp',298,'numParallelCCTs',1,'debug',false);
 
 margin = 1+margin;
 
@@ -42,8 +43,8 @@ for i = 1:length(crossCoupledWidths)/4
     inv0 = INV4('tf',wid0,1);
     inv1 = INV4('tf',wid1,1);
     
-    tfInv0Bench = testbench(inv0,{inv0.i,inv0.vdd,inv0.gnd},{din,vdd,gnd},'EKV','PTM 45nmHP');
-    tfInv1Bench = testbench(inv1,{inv1.i,inv1.vdd,inv1.gnd},{din,vdd,gnd},'EKV','PTM 45nmHP');
+    tfInv0Bench = testbench(inv0,{inv0.i,inv0.vdd,inv0.gnd},{din,vdd,gnd},'EKV','PTM 45nmHP',tbOptionsFull);
+    tfInv1Bench = testbench(inv1,{inv1.i,inv1.vdd,inv1.gnd},{din,vdd,gnd},'EKV','PTM 45nmHP',tbOptionsFull);
     
     [ti0,vi0] = tfInv0Bench.simulate(timeSpan,[0;0;0;0.99]);
     [ti1,vi1] = tfInv1Bench.simulate(timeSpan,[0;0;0;0.99]);

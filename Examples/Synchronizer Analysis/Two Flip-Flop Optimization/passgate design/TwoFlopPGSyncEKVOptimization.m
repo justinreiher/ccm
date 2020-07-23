@@ -11,10 +11,10 @@ tCrit = 1.3e-9;
 
 sync = TWO_FLOP_PG_SYNC('pgSync_test',1,1);
 
-mask = [synch.cctPath.PGFF_0.PGL_0.q,...
-        synch.cctPath.PGFF_0.q,...
-        synch.cctPath.PGFF_1.PGL_0.q,...
-        synch.cctPath.q];
+mask = [sync.cctPath.PGFF_0.PGL_0.q,...
+        sync.cctPath.PGFF_0.q,...
+        sync.cctPath.PGFF_1.PGL_0.q,...
+        sync.cctPath.q];
 
 numTx = 42;
 numTxRobust = 78;
@@ -24,9 +24,9 @@ minWidth = 200e-7;
 
 lastLatch = 33:1:numTx;
 
-uVcrit = zeros(1,synch.nodeNum);
-uNodes = [synch.cctPath.PGFF_1.PGL_0.q,...
-          synch.cctPath.PGFF_1.PGL_0.x0];
+uVcrit = zeros(1,sync.nodeNum);
+uNodes = [sync.cctPath.PGFF_1.PGL_0.q,...
+          sync.cctPath.PGFF_1.PGL_0.x0];
 uVcrit(uNodes) = [1,-1];
 
 transistorNumbering = 1:1:numTx;
@@ -38,7 +38,7 @@ transistorWidths = ones(numTx,1)*nomWidth;
 scale = (sum(ones(1,numTxRobust)*minWidth*4))/(sum(transistorWidths));
 transistorWidths = scale*transistorWidths;
 wMin = ones(numTx,1)*minWidth;
-wMin(lastLatch) = nomWidth*0.999;
+wMin(lastLatch) = transistorWidths(lastLatch)*.9999;
 f_s = @(txWidth) txWidth./wMin - 1./(txWidth./wMin);
 finv_s = @(s) wMin.*(1+(s+sqrt(s.^2+4))/2);
 
@@ -46,11 +46,11 @@ u = transistorWidths./wMin - 1;
 s = u - 1./u;
 sPrev = zeros(numTx,1);
 
-wStart = transistorWidths;
+wStart = transistorWidths(3:end);
 totalWidth = sum(transistorWidths);
 transistorWidthPrev = zeros(numTx,1);
 dGdsPrev = zeros(numTx,1);
-tol = 0.2;
+
 eps = 0.01*minWidth;
 i = 1;
 saveTeola = zeros(1,1000);
@@ -59,7 +59,7 @@ txWidthsSave = zeros(length(transistorWidths),1000);
 txWidthsSave(:,i) = transistorWidths;
 gradientSave = zeros(length(transistorWidths),1000);
 gradientRawSave = zeros(length(transistorWidths),1000);
-while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx*tol)
+while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx || i < 3)
     close all
     sync = TWO_FLOP_PG_SYNC('pgSync_test',transistorWidths,1);
     
@@ -77,19 +77,19 @@ while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx*tol)
     teola = t(end);
     saveTeola(i) = teola;
     fprintf('Current tCrit: %d\n',saveTeola(i));
-    dGdwRaw = nbAnalysis.dGdw(splMeta,Jac_t,dhda_t,dataTransition,beta_t,[t(1),teola],uVcrit);
+    dGdwRaw = nbAnalysis.dGdw(splMeta,Jac_t,dhda_t,dataTransition,u_t,beta_t,g_t,[t(1),teola],t,strcat('gradientData_',num2str(i)));
     
     dGdw = zeros(numTx,1);
     dGdw(nDevices) = dGdwRaw(1:length(nDevices));
     dGdw(pDevices) = dGdwRaw(length(nDevices)+1:end);
     
-    dGdw = -1/g*dGdw;
+    logdGdw = -1/g_t(teola)*dGdw;
     %
-    dGdw(lastLatch) = 0;
-    gradientRawSave(:,i) = dGdw;
+    logdGdw(lastLatch) = 0;
+    gradientRawSave(:,i) = logdGdw;
     
     r = ones(size(transistorWidths))/sqrt(length(transistorWidths));
-    dgdwFix = dGdw - r.*(r.*dGdw);
+    dgdwFix = logdGdw - r.*(r.*logdGdw);
     dwds = wMin.*(1+s./sqrt(s.^2+4))/2;
     dGds = dgdwFix.*dwds;
     
@@ -100,16 +100,18 @@ while(norm(transistorWidths-transistorWidthPrev) > norm(wStart)/numTx*tol)
     sPrev = s;
     
     s = s - gamma*dGds;
-    
+    s(lastLatch) = -1e10;
     widBudget = @(sfix) sum(finv_s(s + sfix*ones(size(s)))) - totalWidth;
     sfix = fzero(widBudget,1);
     
-    transistorWidths = finv_s(s+sfix*ones(size(s)));
+    s = s + sfix*ones(size(s));
+    
+    transistorWidths = finv_s(s);
     
     i = i +1;
     txWidthsSave(:,i) = transistorWidths;
     gradientSave(:,i) = dGds;
-    fprintf('Error ||txCurrent - txPrev|| %d\n',norm(transistorWidths-transistorWidthPrev))
+    fprintf('Error ||txCurrent - txPrev||/||txCurrent|| %d\n',norm(transistorWidths-transistorWidthPrev))
 end
 
 ind = nnz(saveTeola);
